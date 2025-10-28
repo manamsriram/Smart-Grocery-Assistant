@@ -39,6 +39,10 @@ export const InputModal: React.FC<InputModalProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.modalWrapper}
       >
+        {/* Background tap area */}
+        <TouchableOpacity style={styles.background} activeOpacity={1} onPress={onClose} />
+
+        {/* Modal content */}
         <View style={styles.modalContainer}>
           <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
             <Ionicons name="close" size={32} color="#979797" />
@@ -74,10 +78,15 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(32,32,32,0.4)",
   },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
+  },
   modalContainer: {
     width: "100%",
     minHeight: 210,
-    borderRadius: 32,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     backgroundColor: "#fff",
     paddingHorizontal: 18,
     paddingTop: 28,
