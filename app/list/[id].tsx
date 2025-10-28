@@ -25,19 +25,22 @@ export default function ListDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [optionsModalVisible, setOptionsModalVisible] = useState(false);
     const [listItems, setListItems] = useState<Item[]>([]);
+    const [listName, setListName] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const hasItems = listItems.length > 0;
     const activeItems = listItems.filter(item => !item.completed);
     const completedItems = listItems.filter(item => item.completed);
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
-    
+     
     useEffect(() => {
         if (!id) return;
         const listRef = doc(firestore, "lists", id);
         // Subscribe to real-time updates for the list document
         const unsubscribe = onSnapshot(listRef, (listSnap) => {
             if (listSnap.exists()) {
-            setListItems(listSnap.data().items || []);
+                const data = listSnap.data();
+                setListItems(data.items || []);
+                setListName(data.name || "Unnamed List");
             }
             setIsLoading(false);
         });
@@ -88,7 +91,7 @@ export default function ListDetailScreen() {
         <View style={styles.container}>
             {/* Header */}
             <Header
-                title="New Grocery List"
+                title={listName || "Loading..."}
                 titleAlign="center"
                 showLeftIcon
                 showRightIcon
