@@ -1,10 +1,10 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from '@react-navigation/native';
-import React from "react";
+import React, { ReactNode } from "react";
 import { StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
 
 interface HeaderProps {
-  title: string;
+  title: ReactNode;
   titleAlign?: "left" | "center"; // choose title alignment
   showLeftIcon?: boolean;
   leftIconName?: keyof typeof Ionicons.glyphMap;

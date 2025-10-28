@@ -1,24 +1,67 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Header from "../components/Header";
 import { TabBar } from "../components/TabBar";
 
 export default function ListDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // get list id param
+  const { id } = useLocalSearchParams();
+  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+        {/* Header */}
         <Header
-            title="My Lists"
+            title="New Grocery List"
             titleAlign="center"
             showLeftIcon
             showRightIcon
-            onRightPress={() => console.log("Options")}
+            onRightPress={() => setOptionsModalVisible(true)}
         />
+
+    <Modal
+        animationType="slide"
+        transparent={true}
+        visible={optionsModalVisible}
+        onRequestClose={() => setOptionsModalVisible(false)}
+        >
+        <View style={styles.overlay}>
+            {/* overlay close tap */}
+            <TouchableOpacity style={styles.background} onPress={() => setOptionsModalVisible(false)} />   
+
+            <View style={styles.modalContainer}>
+                <TouchableOpacity style={styles.modalCloseButton} onPress={()=> setOptionsModalVisible(false)}>
+                    <Ionicons name="close" size={32} color="#979797" />
+                </TouchableOpacity>
+
+                {/* Options */}
+                <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                    <MaterialIcons name="refresh" size={24} color="#8D8D90" />
+                    <Text style={styles.optionText}>Uncheck all items</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                    <MaterialIcons name="done-all" size={24} color="#8D8D90" />
+                    <Text style={styles.optionText}>Check off all items</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.option} onPress={() => { /* your logic */ }}>
+                    <MaterialCommunityIcons name="cart-arrow-right" size={24} color="#8D8D90" />
+                    <Text style={styles.optionText}>Move checked items to pantry</Text>
+                </TouchableOpacity>
+
+
+                {/* Delete */}
+                <View>
+                    <TouchableOpacity style={styles.deleteOption} onPress={() => {/* your logic */}}>
+                        <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
+                        <Text style={styles.deleteText}>Delete all items</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>     
+        </View>
+    </Modal>
+
 
       {/* Illustration and messages */}
       <View style={styles.centeredContent}>
@@ -50,21 +93,63 @@ export default function ListDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F6F6F6" },
-    header: {
-        flexDirection: "row", 
-        alignItems: "center", 
-        justifyContent: "space-between",
-        paddingTop: 28,
-        paddingHorizontal: 24, 
-        paddingBottom: 18, 
-        backgroundColor: "#fff"
+    container: { 
+        flex: 1,
+        backgroundColor: "#F6F6F6" 
     },
-    headerTitle: { 
-        fontSize: 26, 
-        fontWeight: "bold", 
-        color: "#161616" 
+   
+    overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(32,32,32,0.3)",
     },
+    background: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "transparent"
+    },
+    modalContainer: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 0,
+        paddingTop: 0,
+        paddingBottom: 12,
+        marginBottom: 0,
+        elevation: 16,
+    },  
+    modalCloseButton: {
+        position: "absolute",
+        top: 18,
+        right: 18,
+        zIndex: 1,
+    },
+    option: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 25,
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: "#f0f0f0",
+        gap: 20,
+    },
+    optionText: {
+        fontSize: 17,
+        color: "#222",
+        fontWeight: "500",
+    },
+    
+    deleteOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 20,
+        padding: 22,
+    },
+    deleteText: {
+        fontSize: 17,
+        color: "#dc3545",
+        fontWeight: "600",
+    },
+
     centeredContent: { 
         marginTop: 50,
         alignItems: "center", 

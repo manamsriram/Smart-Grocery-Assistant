@@ -34,7 +34,6 @@ export default function ProfileScreen() {
           }          
       />
 
-
       {/* Profile Card */}
       <View style={styles.card}>
         <TouchableOpacity style={styles.cardItem} onPress={() => router.push("/account")}>
@@ -128,8 +127,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 15,
     marginHorizontal: 20,
-    marginTop: 32,
-    
+    marginTop: 32,    
     shadowColor: "#161616",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
