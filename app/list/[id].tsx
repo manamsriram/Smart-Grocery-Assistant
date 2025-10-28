@@ -2,12 +2,13 @@ import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-ic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayRemove, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
-import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
 import TabBar from "../components/TabBar";
+
 
 type Item = {
     id: string;             
@@ -31,6 +32,12 @@ export default function ListDetailScreen() {
     const activeItems = listItems.filter(item => !item.completed);
     const completedItems = listItems.filter(item => item.completed);
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+    const scrollY = React.useRef(new Animated.Value(0)).current;
+    const addButtonOpacity = scrollY.interpolate({
+        inputRange: [0, 150],
+        outputRange: [1, 0.3],
+        extrapolate: "clamp",
+    });
      
     useEffect(() => {
         if (!id) return;
@@ -137,75 +144,82 @@ export default function ListDetailScreen() {
         </Modal>
 
         {hasItems ? (
-            <ScrollView contentContainerStyle={styles.listContent}>
-  {/* Tabs */}
-  <View style={styles.tabHeader}>
-    <TouchableOpacity onPress={() => setActiveTab("active")}>
-      <Text style={activeTab === "active" ? styles.tabActive : styles.tabInactive}>Your list</Text>
-      <Text style={activeTab === "active" ? styles.tabCountActive : styles.tabCountInactive}>
-        {activeItems.length} Items
-      </Text>
-    </TouchableOpacity>
+            <Animated.ScrollView
+                contentContainerStyle={styles.listContent}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: true }
+                )}
+                scrollEventThrottle={16}
+            >
+            {/* Tabs */}
+            <View style={styles.tabHeader}>
+                <TouchableOpacity onPress={() => setActiveTab("active")}>
+                <Text style={activeTab === "active" ? styles.tabActive : styles.tabInactive}>Your list</Text>
+                <Text style={activeTab === "active" ? styles.tabCountActive : styles.tabCountInactive}>
+                    {activeItems.length} Items
+                </Text>
+                </TouchableOpacity>
 
-    <TouchableOpacity onPress={() => setActiveTab("completed")}>
-      <Text style={activeTab === "completed" ? styles.tabActive : styles.tabInactive}>Completed Items</Text>
-      <Text style={activeTab === "completed" ? styles.tabCountActive : styles.tabCountInactive}>
-        {completedItems.length} Items
-      </Text>
-    </TouchableOpacity>
-  </View>
-
-  {/* Render only the selected tab items */}
-  {activeTab === "active" &&
-    Object.entries(groupedActiveItems).map(([category, items]) => (
-      <Fragment key={category}>
-        <View style={styles.categoryHeader}>
-          <Text style={styles.categoryText}>{category}</Text>
-        </View>
-        {items.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.itemRow}
-            onPress={() => toggleItemCompletion(item)}
-          >
-            <View style={[styles.circle, item.completed && styles.checkedCircle]}>
-              {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                <TouchableOpacity onPress={() => setActiveTab("completed")}>
+                <Text style={activeTab === "completed" ? styles.tabActive : styles.tabInactive}>Completed Items</Text>
+                <Text style={activeTab === "completed" ? styles.tabCountActive : styles.tabCountInactive}>
+                    {completedItems.length} Items
+                </Text>
+                </TouchableOpacity>
             </View>
-            <Text style={styles.itemText}>{item.name}</Text>
-            <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
-              <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-      </Fragment>
-    ))}
 
-  {activeTab === "completed" &&
-    Object.entries(groupedCompletedItems).map(([category, items]) => (
-      <Fragment key={category}>
-        <View style={styles.categoryHeader}>
-          <Text style={styles.categoryText}>{category}</Text>
-        </View>
-        {items.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.itemRow}
-            onPress={() => toggleItemCompletion(item)}
-          >
-            <View style={[styles.circle, item.completed && styles.checkedCircle]}>
-              {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
-            </View>
-            <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: '#888' }]}>
-              {item.name}
-            </Text>
-            <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
-              <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-      </Fragment>
-    ))}
-</ScrollView>
+            {/* Render only the selected tab items */}
+            {activeTab === "active" &&
+                Object.entries(groupedActiveItems).map(([category, items]) => (
+                <Fragment key={category}>
+                    <View style={styles.categoryHeader}>-
+                    <Text style={styles.categoryText}>{category}</Text>
+                    </View>
+                    {items.map((item) => (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={styles.itemRow}
+                        onPress={() => toggleItemCompletion(item)}
+                    >
+                        <View style={[styles.circle, item.completed && styles.checkedCircle]}>
+                        {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        </View>
+                        <Text style={styles.itemText}>{item.name}</Text>
+                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
+                        <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                    ))}
+                </Fragment>
+                ))}
+
+            {activeTab === "completed" &&
+                Object.entries(groupedCompletedItems).map(([category, items]) => (
+                <Fragment key={category}>
+                    <View style={styles.categoryHeader}>
+                    <Text style={styles.categoryText}>{category}</Text>
+                    </View>
+                    {items.map((item) => (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={styles.itemRow}
+                        onPress={() => toggleItemCompletion(item)}
+                    >
+                        <View style={[styles.circle, item.completed && styles.checkedCircle]}>
+                        {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        </View>
+                        <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: '#888' }]}>
+                        {item.name}
+                        </Text>
+                        <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
+                        <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                    ))}
+                </Fragment>
+                ))}
+            </Animated.ScrollView>
 
         ) : (
             <View style={styles.centeredContent}>
@@ -219,9 +233,11 @@ export default function ListDetailScreen() {
             </View>
         )}
         {/* Positioned absolutely - always visible */}
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/list/${id}/add-list-item`)}>
-            <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
+        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
+            <TouchableOpacity onPress={() => router.push(`/list/${id}/add-list-item`)}>
+                <Text style={styles.addButtonText}>+ Add</Text>
+            </TouchableOpacity>
+        </Animated.View>
 
         {/* Tab Bar */}
         <TabBar
