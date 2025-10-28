@@ -1,41 +1,60 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { collection, getDocs } from "firebase/firestore";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { arrayUnion, collection, doc, getDocs, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { firestore } from "../firebaseConfig";
-import { TabBar } from "./components/TabBar";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { firestore } from "../../../firebaseConfig";
+import TabBar from "../../components/TabBar";
 
 type Item = {
-    id: string;
-    name: string;
-  };
+  id: string;             
+  name: string;           
+  category: string;       
+  quantity: string;      
+  unit: string;           
+  price: string;          
+  expirationDate: string;  
+};
 
 export default function AddListItemScreen() {
   const router = useRouter();
   const [item, setItem] = useState<string>("");
   const [allItems, setAllItems] = useState<Item[]>([]);
+  const { id: listId } = useLocalSearchParams<{ id: string }>();
+  const filtered = !item
+    ? []
+    : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
 
-  
-useEffect(() => {
-  async function fetchData() {
-    const snapshot = await getDocs(collection(firestore, "items"));
-    setAllItems(
-      snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            name: doc.data().name as string,
-          }) as Item
-      )
-    );
+  useEffect(() => {
+    async function fetchData() {
+      const snapshot = await getDocs(collection(firestore, "items"));
+      setAllItems(
+        snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              name: doc.data().name as string,
+              category: doc.data().category as string,
+            }) as Item
+        )
+      );
+    }
+    fetchData();
+  }, []);  
+
+  async function addItemToCurrentList(item: Item) {
+    if (!listId) return;
+    const listRef = doc(firestore, "lists", listId);
+    try {
+      await updateDoc(listRef, {
+        items: arrayUnion(item)
+      });
+      Alert.alert("Success", `${item.name} was added to your list.`);
+    } catch (error) {
+      console.warn("Failed to add item to current list:", error);
+      Alert.alert("Error", "Failed to add item to your list. Please try again.");
+    }
   }
-  fetchData();
-}, []);
-
-const filtered = !item
-  ? []
-  : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
 
   return (
     <View style={styles.container}>
@@ -72,12 +91,12 @@ const filtered = !item
 
       {/* Main Content Area */}
       <View style={styles.mainContent}>
-        {filtered.map((item) => (
-        <View key={item.id} style={styles.resultRow}>
+      {filtered.map((item) => (
+        <TouchableOpacity key={item.id} style={styles.resultRow} onPress={() => addItemToCurrentList(item)}>
           <Text style={styles.resultText}>{item.name}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
-      </View>
+    </View>
 
       {/* Tab Bar */}
       <TabBar
@@ -143,7 +162,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   resultText: {
-    fontSize: 17,
+    fontSize: 16,
     color: "#444",
   },
 });

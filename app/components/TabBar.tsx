@@ -7,7 +7,7 @@ type TabBarProps = {
   onTabPress: (tab: TabBarProps["activeTab"]) => void;
 };
 
-export function TabBar({ activeTab, onTabPress }: TabBarProps) {
+function TabBar({ activeTab, onTabPress }: TabBarProps) {
   return (
     <View style={styles.tabBar}>
       <TouchableOpacity
@@ -75,3 +75,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+export default TabBar;

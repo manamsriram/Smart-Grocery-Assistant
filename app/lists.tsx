@@ -5,11 +5,11 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, Timesta
 import React, { useState } from "react";
 import { Alert, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { app, firestore } from "../firebaseConfig";
-import { BodySubtitle } from "./components/BodySubtitle";
-import { BodyTitle } from "./components/BodyTitle";
+import BodySubtitle from "./components/BodySubtitle";
+import BodyTitle from "./components/BodyTitle";
 import Header from "./components/Header";
-import { InputModal } from "./components/InputModal";
-import { TabBar } from "./components/TabBar";
+import InputModal from "./components/InputModal";
+import TabBar from "./components/TabBar";
 
 type GroceryList = {
   id: string;

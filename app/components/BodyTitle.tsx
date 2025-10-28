@@ -6,7 +6,7 @@ type BodyTitleProps = {
   style?: TextStyle;
 };
 
-export const BodyTitle = ({ children, style }: BodyTitleProps) => {
+const BodyTitle = ({ children, style }: BodyTitleProps) => {
   return <Text style={[styles.bodyTitle, style]}>{children}</Text>;
 };
 
@@ -18,3 +18,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+
+export default BodyTitle;

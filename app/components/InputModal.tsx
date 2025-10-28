@@ -22,7 +22,7 @@ type InputModalProps = {
   secureTextEntry?: boolean;
 };
 
-export const InputModal: React.FC<InputModalProps> = ({
+const InputModal: React.FC<InputModalProps> = ({
   visible,
   title,
   placeholder,
@@ -128,3 +128,5 @@ const styles = StyleSheet.create({
     fontSize: 19,
   },
 });
+
+export default InputModal;

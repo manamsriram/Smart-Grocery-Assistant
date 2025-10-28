@@ -6,7 +6,7 @@ type BodySubtitleProps = {
   style?: TextStyle;
 };
 
-export const BodySubtitle = ({ children, style }: BodySubtitleProps) => {
+const BodySubtitle = ({ children, style }: BodySubtitleProps) => {
   return <Text style={[styles.bodySubtitle, style]}>{children}</Text>;
 };
 
@@ -17,3 +17,5 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
 });
+
+export default BodySubtitle;
