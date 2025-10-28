@@ -2,6 +2,8 @@ import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-ic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { BodySubtitle } from "../components/BodySubtitle";
+import { BodyTitle } from "../components/BodyTitle";
 import Header from "../components/Header";
 import { TabBar } from "../components/TabBar";
 
@@ -62,8 +64,8 @@ export default function ListDetailScreen() {
       {/* Illustration and messages */}
       <View style={styles.centeredContent}>
         <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
-        <Text style={styles.mainText}>Let’s plan your shopping</Text>
-        <Text style={styles.subText}>Tap the plus button to start adding products</Text>
+        <BodyTitle>Let’s plan your shopping</BodyTitle>
+        <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
         <TouchableOpacity style={styles.scanBarcodesButton}>
           <Ionicons name="camera" size={20} color="#22c55e" />
           <Text style={styles.scanText}>Scan Barcodes</Text>
@@ -139,22 +141,12 @@ const styles = StyleSheet.create({
     illustration: {
         height: 210,
         width: 270,
-        marginBottom: 28 
-    },
-    mainText: { 
-        fontSize: 19,
-        fontWeight: "600", 
-        marginBottom: 6, color: "#222" 
-    },
-    subText: { 
-        color: "#6c6c6c", 
-        fontSize: 15, 
-        marginBottom: 18 
+        marginTop: 60,
     },
     scanBarcodesButton: { 
         flexDirection: "row",
         alignItems: "center", 
-        marginBottom: 28 
+        marginBottom: 28,
     },
     scanText: { 
         fontSize: 16, 

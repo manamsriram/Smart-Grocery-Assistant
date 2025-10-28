@@ -5,6 +5,8 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, Timesta
 import React, { useState } from "react";
 import { Alert, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { app, firestore } from "../firebaseConfig";
+import { BodySubtitle } from "./components/BodySubtitle";
+import { BodyTitle } from "./components/BodyTitle";
 import Header from "./components/Header";
 import { InputModal } from "./components/InputModal";
 import { TabBar } from "./components/TabBar";
@@ -141,8 +143,8 @@ export default function ListsScreen() {
         {lists.length === 0 ? (
           <>
             <Image source={require("../assets/mylist-logo.png")} style={styles.illustration} resizeMode="contain" />
-            <Text style={styles.bodyTitle}>Let’s plan your shopping</Text>
-            <Text style={styles.bodySubtitle}>Tap the plus button to create your list</Text>
+            <BodyTitle>Let’s plan your shopping</BodyTitle>
+            <BodySubtitle>Tap the plus button to create your list</BodySubtitle>
           </>
         ) : (
           <FlatList
@@ -281,17 +283,6 @@ const styles = StyleSheet.create({
     height: 210,
     width: 270,
     marginTop: 150,
-  },
-  bodyTitle: {
-    fontSize: 20,
-    fontWeight: "500",
-    color: "#202020",
-    marginBottom: 8,
-  },
-  bodySubtitle: {
-    color: "#969696",
-    fontSize: 17,
-    marginBottom: 50,
   },
   newListButton: {
     position: "absolute",
