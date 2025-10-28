@@ -2,7 +2,7 @@ import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-ic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayRemove, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
-import { Alert, Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
@@ -31,6 +31,10 @@ export default function ListDetailScreen() {
     const activeItems = listItems.filter(item => !item.completed);
     const completedItems = listItems.filter(item => item.completed);
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+    const [editingItem, setEditingItem] = useState<Partial<Item> | null>(null);
+
+    const [editedValues, setEditedValues] = useState<Partial<Item>>({});
 
     const scrollY = React.useRef(new Animated.Value(0)).current;
     const addButtonOpacity = scrollY.interpolate({
@@ -136,6 +140,69 @@ export default function ListDetailScreen() {
         ]);
     }
 
+    // Handle input changes for the editable fields
+    const handleInputChange = (field: keyof Item, value: string) => {
+        setEditedValues(prevState => ({
+            ...prevState,
+            [field]: value,
+        }));
+    };
+
+
+    const handleSaveChanges = async () => {
+        if (!editingItem) return;
+
+        const updatedItem = {
+            ...editingItem,
+            ...editedValues, // Include updated values from the form
+        };
+
+        const fieldsToUpdate: Partial<Item> = {};
+            (Object.keys(updatedItem) as (keyof Item)[]).forEach(key => {
+            const value = updatedItem[key];
+            if (value !== undefined && value !== "") {
+                fieldsToUpdate[key] = value as any; // type assertion prevents TS2322
+            }
+        });
+
+        if (!listRef) return;
+
+        try {
+            await updateDoc(listRef, {
+                items: listItems.map((i) => 
+                    i.id === updatedItem.id ? { ...i, ...fieldsToUpdate } : i
+                ),
+            });
+            setDetailsModalVisible(false)
+        } catch (error) {
+            console.error("Failed to save item:", error);
+            Alert.alert("Error", "Failed to save item. Please try again later.");
+        }
+    };
+
+    function getItemDetailLine(item: Item) {
+        const parts: string[] = [];
+        // Price (show only if present, without leading $ if user already types a dollar sign)
+        if (item.price && item.price.trim() !== "") {
+            let price = item.price.startsWith("$") ? item.price : `$${item.price}`;
+            parts.push(price);
+        }
+        // Quantity and Unit (either, but as a single string if both present)
+        if (item.quantity && item.quantity.trim() !== "" && item.unit && item.unit.trim() !== "") {
+            parts.push(`${item.quantity} ${item.unit}`);
+        } else if (item.quantity && item.quantity.trim() !== "") {
+            parts.push(item.quantity);
+        } else if (item.unit && item.unit.trim() !== "") {
+            parts.push(item.unit);
+        }
+        // Expiration date (show only if present)
+        if (item.expirationDate && item.expirationDate.trim() !== "") {
+            parts.push(item.expirationDate);
+        }
+        // Join with " - "
+        return parts.join(" - ");
+    }
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -222,14 +289,30 @@ export default function ListDetailScreen() {
                     <TouchableOpacity
                         key={item.id}
                         style={styles.itemRow}
-                        onPress={() => toggleItemCompletion(item)}
+                        onPress={() => {
+                            setEditingItem(item);
+                            setEditedValues({ 
+                                quantity: item.quantity,
+                                unit: item.unit,
+                                price: item.price,
+                                expirationDate: item.expirationDate,
+                            });
+                            setDetailsModalVisible(true);
+                        }}
                     >
-                        <View style={[styles.circle, item.completed && styles.checkedCircle]}>
-                        {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        <TouchableOpacity style={[styles.circle, item.completed && styles.checkedCircle]} onPress={() => toggleItemCompletion(item)}>
+                            {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        </TouchableOpacity>                
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.itemText}>{item.name}</Text>
+                            {/* Detail line in gray, below name */}
+                            {getItemDetailLine(item) !== "" && (
+                                <Text style={styles.itemDetailText}>{getItemDetailLine(item)}</Text>
+                            )}
                         </View>
-                        <Text style={styles.itemText}>{item.name}</Text>
+
                         <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
-                        <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
+                            <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
                         </TouchableOpacity>
                     </TouchableOpacity>
                     ))}
@@ -249,20 +332,93 @@ export default function ListDetailScreen() {
                         onPress={() => toggleItemCompletion(item)}
                     >
                         <View style={[styles.circle, item.completed && styles.checkedCircle]}>
-                        {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                            {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        </View>                       
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: '#888' }]}>
+                                {item.name}
+                            </Text>
+                            {/* Detail line in gray, below name */}
+                            {getItemDetailLine(item) !== "" && (
+                                <Text style={[styles.itemDetailText, { textDecorationLine: 'line-through', color: '#888' }]}>{getItemDetailLine(item)}</Text>
+                            )}
                         </View>
-                        <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: '#888' }]}>
-                        {item.name}
-                        </Text>
                         <TouchableOpacity style={styles.deleteButton} onPress={() => deleteItem(item)}>
-                        <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
+                            <MaterialIcons name="delete-outline" size={22} color="#dc3545" />
                         </TouchableOpacity>
                     </TouchableOpacity>
                     ))}
                 </Fragment>
                 ))}
-            </Animated.ScrollView>
+                
+                <Modal
+                    visible={detailsModalVisible}
+                    animationType="slide"
+                    transparent
+                    onRequestClose={() => setDetailsModalVisible(false)}
+                >
+                    <View style={styles.detailsModalOverlay}>
+                        {/* TouchableWithoutFeedback to dismiss keyboard */}
+                        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+                            <View style={styles.background} />
+                        </TouchableWithoutFeedback>
 
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === 'ios' ? 'padding' : undefined} // For iOS, use 'padding' behavior
+                            style={styles.detailsModalContainer}
+                        >
+                            {/* Header row */}
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+                                <Text style={{ fontWeight: "bold", fontSize: 26 }}>{editingItem?.name}</Text>
+                                {/* Replace X button with Done */}
+                                <TouchableOpacity onPress={handleSaveChanges}>
+                                    <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Grid Inputs */}
+                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                <View style={{ flex: 1, marginRight: 5 }}>
+                                    <Text style={styles.label}>Quantity</Text>
+                                    <TextInput
+                                        style={styles.inputBoxText}
+                                        value={editedValues.quantity ?? ""}
+                                        onChangeText={(value) => handleInputChange("quantity", value)}
+                                        placeholder="1"
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={styles.label}>Price</Text>                                  
+                                    <TextInput
+                                        style={styles.inputBoxText}
+                                        value={editedValues.price ? `$${editedValues.price}` : ""}
+                                        onChangeText={(value) => handleInputChange("price", value.replace(/[^0-9.]/g, ''))}  // Strip non-numeric characters except for the dot
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 5 }}>
+                                    <Text style={styles.label}>Unit</Text>
+                                    <TextInput
+                                        style={styles.inputBoxText}
+                                        value={editedValues.unit ?? ""}
+                                        onChangeText={(value) => handleInputChange("unit", value)}
+                                        placeholder="Unit" 
+                                    />
+                                    <Text style={styles.label}>Expiration date</Text>
+                                    <TextInput
+                                        style={styles.inputBoxText}
+                                        value={editedValues.expirationDate ?? ""}
+                                        onChangeText={(value) => handleInputChange("expirationDate", value)}
+                                        placeholder="10/28/2025" 
+                                    />
+                                </View>
+                            </View>
+                        </KeyboardAvoidingView>
+                    </View>
+                </Modal>
+
+
+            </Animated.ScrollView>
         ) : (
             <View style={styles.centeredContent}>
             <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
@@ -449,4 +605,48 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         fontSize: 22
     },  
+    
+    // Detail Item Modal
+    detailsModalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(32,32,32,0.4)",
+        justifyContent: "flex-end",
+    },
+    detailsModalContainer: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 22,
+        paddingBottom: 28, 
+    },
+    label: {
+        fontSize: 16,
+        color: "#888",
+        marginBottom: 10,
+    },   
+    inputBoxText: {
+        fontSize: 18,
+        color: "#222",
+        borderRadius: 11,
+        paddingVertical: 13,
+        paddingHorizontal: 15,
+        backgroundColor: "#f8f8f8",
+        marginBottom: 40,
+    },
+    saveButton: {
+        backgroundColor: "#36AF27",
+        borderRadius: 28,
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 16,
+        marginTop: 5,
+        marginBottom: 20,
+    },
+    itemDetailText: {
+        fontSize: 15,
+        color: "#888",
+        marginTop: 3,
+        marginLeft: 2,
+        },
 });
