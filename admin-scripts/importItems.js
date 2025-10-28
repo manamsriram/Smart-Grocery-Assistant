@@ -17,7 +17,10 @@ async function importItems() {
   console.log(`Importing ${items.length} items...`);
   let count = 0;
   for (const item of items) {
-    await db.collection('items').add(item);
+    // Add completed: false
+    const itemWithCompleted = { ...item, completed: false };
+
+    await db.collection('items').add(itemWithCompleted);
     count++;
     if (count % 100 === 0) console.log(`Imported ${count} items...`);
   }
