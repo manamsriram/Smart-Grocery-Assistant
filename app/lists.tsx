@@ -193,13 +193,21 @@ export default function ListsScreen() {
       />
       
       {/* Modal for Options */}
-      <Modal
+     <Modal
         animationType="slide"
         transparent={true}
         visible={optionsModalVisible}
         onRequestClose={() => setOptionsModalVisible(false)}
       >
         <View style={styles.optionsModalOverlay}>
+          {/* Background tap area */}
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setOptionsModalVisible(false)}
+          />
+
+          {/* Modal content */}
           <View style={styles.optionsModalContainer}>
             <TouchableOpacity
               style={styles.modalCloseButton}
@@ -207,18 +215,21 @@ export default function ListsScreen() {
             >
               <Ionicons name="close" size={28} color="#979797" />
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.OptionButton} onPress={openRenameModal}>
               <View style={styles.optionRow}>
                 <MaterialIcons name="edit" size={22} color="#222" />
                 <Text style={styles.optionText}>Rename</Text>
               </View>
-            </TouchableOpacity> 
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.OptionButton} onPress={handleDuplicate}>
               <View style={styles.optionRow}>
                 <MaterialCommunityIcons name="content-copy" size={22} color="#222" />
                 <Text style={styles.optionText}>Duplicate</Text>
               </View>
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.OptionButton} onPress={handleDelete}>
               <View style={styles.optionRow}>
                 <MaterialIcons name="delete" size={22} color="#dc3545" />
@@ -337,21 +348,23 @@ const styles = StyleSheet.create({
   },
   optionsModalContainer: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    minHeight: 200,
-    position: "relative",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: "auto",
+    position: "relative",    
   },
   OptionButton: {
-    paddingVertical: 16,
+    paddingVertical: 25,
+    paddingLeft: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   optionRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   optionText: {
-    fontSize: 18,
+    fontSize: 17,
     marginLeft: 16,
     color: "#222",
   },

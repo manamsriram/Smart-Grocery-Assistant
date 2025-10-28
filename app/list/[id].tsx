@@ -49,15 +49,11 @@ export default function ListDetailScreen() {
                     <MaterialCommunityIcons name="cart-arrow-right" size={24} color="#8D8D90" />
                     <Text style={styles.optionText}>Move checked items to pantry</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                    <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
+                    <Text style={[styles.optionText, { color: "#dc3545" }]}>Delete all items</Text>
+                </TouchableOpacity>
 
-
-                {/* Delete */}
-                <View>
-                    <TouchableOpacity style={styles.deleteOption} onPress={() => {/* your logic */}}>
-                        <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
-                        <Text style={styles.deleteText}>Delete all items</Text>
-                    </TouchableOpacity>
-                </View>
             </View>     
         </View>
     </Modal>
@@ -98,6 +94,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F6F6F6" 
     },
    
+    // Modal for options
     overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -111,11 +108,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        padding: 0,
-        paddingTop: 0,
-        paddingBottom: 12,
-        marginBottom: 0,
-        elevation: 16,
+        elevation: 16, // Android-only property that controls the visual depth
     },  
     modalCloseButton: {
         position: "absolute",
@@ -127,7 +120,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         paddingVertical: 25,
-        paddingHorizontal: 15,
+        paddingLeft: 30,
         borderBottomWidth: 1,
         borderBottomColor: "#f0f0f0",
         gap: 20,
@@ -137,19 +130,6 @@ const styles = StyleSheet.create({
         color: "#222",
         fontWeight: "500",
     },
-    
-    deleteOption: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 20,
-        padding: 22,
-    },
-    deleteText: {
-        fontSize: 17,
-        color: "#dc3545",
-        fontWeight: "600",
-    },
-
     centeredContent: { 
         marginTop: 50,
         alignItems: "center", 
