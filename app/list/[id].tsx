@@ -71,7 +71,7 @@ export default function ListDetailScreen() {
           <Text style={styles.scanText}>Scan Barcodes</Text>
         </TouchableOpacity>
         {/* Add Button */}
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push("../add-list-item")}>
             <Text style={styles.addButtonText}>+ Add</Text>
         </TouchableOpacity>
       </View>      

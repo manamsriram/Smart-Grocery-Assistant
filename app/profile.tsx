@@ -126,8 +126,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 15,
-    marginHorizontal: 20,
-    marginTop: 32,    
+    marginHorizontal: 18,
+    marginTop: 20,    
     shadowColor: "#161616",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     width: 28,
   },
   cardText: {
-    fontSize: 19,
+    fontSize: 16,
     color: "#454545",
     marginLeft: 18,
     fontWeight: "500",
