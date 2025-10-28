@@ -76,7 +76,7 @@ export default function ListDetailScreen() {
         </TouchableOpacity>
       </View>      
 
-      {/* Tab Bar */}
+        {/* Tab Bar */}
         <TabBar
             activeTab="Lists" // set dynamically per screen if needed
             onTabPress={(tab) => {

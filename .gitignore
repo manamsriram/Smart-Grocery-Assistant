@@ -44,3 +44,7 @@ app-example
 
 # Auto-generated files
 InternalBytecode.js
+
+# Admin service account keys should NEVER be versioned
+admin-scripts/*.json
+admin-scripts/firebase-adminsdk-*.json
