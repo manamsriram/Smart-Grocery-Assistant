@@ -2,13 +2,12 @@ import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-ic
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayRemove, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
-import { Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
 import TabBar from "../components/TabBar";
-
 
 type Item = {
     id: string;             
@@ -32,6 +31,7 @@ export default function ListDetailScreen() {
     const activeItems = listItems.filter(item => !item.completed);
     const completedItems = listItems.filter(item => item.completed);
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+
     const scrollY = React.useRef(new Animated.Value(0)).current;
     const addButtonOpacity = scrollY.interpolate({
         inputRange: [0, 150],
@@ -66,33 +66,75 @@ export default function ListDetailScreen() {
         if (!acc[item.category]) acc[item.category] = [];
         acc[item.category].push(item);
         return acc;
-    }, {}); 
+    }, {});     
+   
+    // --- Firestore helpers
+    const listRef = id ? doc(firestore, "lists", id) : null;
 
     async function deleteItem(item: Item) {
-        if (!id) return;
-        const listRef = doc(firestore, "lists", id);
+        if (!listRef) return;
         try {
-            await updateDoc(listRef, {
-                items: arrayRemove(item)
-            });
+        await updateDoc(listRef, {
+            items: arrayRemove(item),
+        });
         } catch (error) {
-            console.error("Failed to delete item:", error);
+        console.error("Failed to delete item:", error);
         }
-    };
+    }
 
     async function toggleItemCompletion(item: Item) {
-        if (!id) return;
-        const listRef = doc(firestore, "lists", id);
-
+        if (!listRef) return;
         try {
-            const updatedItem = { ...item, completed: !item.completed };
-            await updateDoc(listRef, {
-                items: listItems.map(i => i.id === item.id ? updatedItem : i)
-            });
+        const updatedItem = { ...item, completed: !item.completed };
+        await updateDoc(listRef, {
+            items: listItems.map((i) => (i.id === item.id ? updatedItem : i)),
+        });
         } catch (error) {
-            console.error("Failed to update item:", error);
+        console.error("Failed to update item:", error);
         }
-    };
+    }
+
+    // --- Option actions
+    async function handleUncheckAll() {
+        if (!listRef) return;
+        try {
+        const updatedItems = listItems.map((i) => ({ ...i, completed: false }));
+        await updateDoc(listRef, { items: updatedItems });
+        setOptionsModalVisible(false);
+        } catch (error) {
+        console.error("Error unchecking items:", error);
+        }
+    }
+    
+    async function handleCheckAll() {
+        if (!listRef) return;
+        try {
+        const updatedItems = listItems.map((i) => ({ ...i, completed: true }));
+        await updateDoc(listRef, { items: updatedItems });
+        setOptionsModalVisible(false);
+        } catch (error) {
+        console.error("Error checking all items:", error);
+        }
+    }    
+
+    async function handleDeleteAll() {
+        if (!listRef) return;
+        Alert.alert("Delete all items?", "This will remove all items from your list.", [
+        { text: "Cancel", style: "cancel" },
+        {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+            try {
+                await updateDoc(listRef, { items: [] });
+                setOptionsModalVisible(false);
+            } catch (error) {
+                console.error("Error deleting all items:", error);
+            }
+            },
+        },
+        ]);
+    }
 
     return (
         <View style={styles.container}>
@@ -122,11 +164,11 @@ export default function ListDetailScreen() {
                         </TouchableOpacity>
 
                         {/* Options */}
-                        <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                        <TouchableOpacity style={styles.option} onPress={handleUncheckAll}>
                             <MaterialIcons name="refresh" size={24} color="#8D8D90" />
                             <Text style={styles.optionText}>Uncheck all items</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                        <TouchableOpacity style={styles.option} onPress={handleCheckAll}>
                             <MaterialIcons name="done-all" size={24} color="#8D8D90" />
                             <Text style={styles.optionText}>Check off all items</Text>
                         </TouchableOpacity>
@@ -134,7 +176,7 @@ export default function ListDetailScreen() {
                             <MaterialCommunityIcons name="cart-arrow-right" size={24} color="#8D8D90" />
                             <Text style={styles.optionText}>Move checked items to pantry</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.option} onPress={() => {/* your logic */}}>
+                        <TouchableOpacity style={styles.option} onPress={handleDeleteAll}>
                             <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
                             <Text style={[styles.optionText, { color: "#dc3545" }]}>Delete all items</Text>
                         </TouchableOpacity>
@@ -155,17 +197,17 @@ export default function ListDetailScreen() {
             {/* Tabs */}
             <View style={styles.tabHeader}>
                 <TouchableOpacity onPress={() => setActiveTab("active")}>
-                <Text style={activeTab === "active" ? styles.tabActive : styles.tabInactive}>Your list</Text>
-                <Text style={activeTab === "active" ? styles.tabCountActive : styles.tabCountInactive}>
-                    {activeItems.length} Items
-                </Text>
+                    <Text style={activeTab === "active" ? styles.tabActive : styles.tabInactive}>Your list</Text>
+                    <Text style={activeTab === "active" ? styles.tabCountActive : styles.tabCountInactive}>
+                        {activeItems.length} Items
+                    </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => setActiveTab("completed")}>
-                <Text style={activeTab === "completed" ? styles.tabActive : styles.tabInactive}>Completed Items</Text>
-                <Text style={activeTab === "completed" ? styles.tabCountActive : styles.tabCountInactive}>
-                    {completedItems.length} Items
-                </Text>
+                    <Text style={activeTab === "completed" ? styles.tabActive : styles.tabInactive}>Completed Items</Text>
+                    <Text style={activeTab === "completed" ? styles.tabCountActive : styles.tabCountInactive}>
+                        {completedItems.length} Items
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -173,8 +215,8 @@ export default function ListDetailScreen() {
             {activeTab === "active" &&
                 Object.entries(groupedActiveItems).map(([category, items]) => (
                 <Fragment key={category}>
-                    <View style={styles.categoryHeader}>-
-                    <Text style={styles.categoryText}>{category}</Text>
+                    <View style={styles.categoryHeader}>
+                        <Text style={styles.categoryText}>{category}</Text>
                     </View>
                     {items.map((item) => (
                     <TouchableOpacity
