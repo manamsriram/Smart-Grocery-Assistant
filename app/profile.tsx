@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { app } from "../firebaseConfig";
 import Header from "./components/Header";
-import { TabBar } from "./components/TabBar";
+import TabBar from "./components/TabBar";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header 
+      <Header
           title={
             <>
               Hello <Text style={{ color: "#36AF27" }}>{userName}</Text>!
@@ -96,6 +96,7 @@ export default function ProfileScreen() {
         activeTab="Profile"
         onTabPress={(tab) => {
           if (tab === "Lists") router.push("/lists");
+          if (tab === "Pantry") router.push("/pantry");
           if (tab === "Profile") return;
         }}
       />

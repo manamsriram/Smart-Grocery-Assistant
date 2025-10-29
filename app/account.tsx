@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { app } from "../firebaseConfig";
 import Header from "./components/Header";
-import { InputModal } from "./components/InputModal";
-import { TabBar } from "./components/TabBar";
+import InputModal from "./components/InputModal";
+import TabBar from "./components/TabBar";
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -180,7 +180,8 @@ export default function AccountScreen() {
         activeTab="Profile"
         onTabPress={(tab) => {
           if (tab === "Lists") router.push("/lists");
-          // ...other navigation logic
+          if (tab === "Profile") return;
+          if (tab === "Pantry") router.push("/pantry");
         }}
       />
     </View>

@@ -421,13 +421,13 @@ export default function ListDetailScreen() {
             </Animated.ScrollView>
         ) : (
             <View style={styles.centeredContent}>
-            <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
-            <BodyTitle>Let’s plan your shopping</BodyTitle>
-            <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
-            <TouchableOpacity style={styles.scanBarcodesButton}>
-                <Ionicons name="camera" size={20} color="#22c55e" />
-                <Text style={styles.scanText}>Scan Barcodes</Text>
-            </TouchableOpacity>
+                <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
+                <BodyTitle>Let’s plan your shopping</BodyTitle>
+                <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
+                <TouchableOpacity style={styles.scanBarcodesButton}>
+                    <Ionicons name="camera" size={20} color="#22c55e" />
+                    <Text style={styles.scanText}>Scan Barcodes</Text>
+                </TouchableOpacity>
             </View>
         )}
         {/* Positioned absolutely - always visible */}
@@ -442,6 +442,7 @@ export default function ListDetailScreen() {
             activeTab="Lists"
             onTabPress={(tab) => {
             if (tab === "Lists") return;
+            if (tab === "Pantry") router.push("/pantry");
             if (tab === "Profile") router.push("/profile");
             }}
         />

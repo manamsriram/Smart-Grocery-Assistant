@@ -260,7 +260,7 @@ export default function ListsScreen() {
         activeTab="Lists" // set dynamically per screen if needed
         onTabPress={(tab) => {
           if (tab === "Lists") return;
-          // if (tab === "Pantry") router.push("/pantry");
+          if (tab === "Pantry") router.push("/pantry");
           // if (tab === "Recipes") router.push("/recipes");
           if (tab === "Profile") router.push("/profile");
         }}

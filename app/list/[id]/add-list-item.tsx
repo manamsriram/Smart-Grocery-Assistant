@@ -103,6 +103,7 @@ export default function AddListItemScreen() {
         activeTab="Lists"
         onTabPress={(tab) => {
           if (tab === "Lists") return;
+          if (tab === "Pantry") router.push("/pantry");
           if (tab === "Profile") router.push("/profile");
         }}
       />
