@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { arrayRemove, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { addDoc, arrayRemove, collection, doc, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
@@ -8,6 +8,7 @@ import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
 import TabBar from "../components/TabBar";
+
 
 type Item = {
     id: string;             
@@ -120,6 +121,44 @@ export default function ListDetailScreen() {
         console.error("Error checking all items:", error);
         }
     }    
+
+    async function handleMoveCheckedToPantry() {
+        if (!listRef) return;
+        try {
+            // Fetch current pantry items
+            const pantrySnapshot = await getDocs(collection(firestore, "pantry"));
+            const pantryItems = pantrySnapshot.docs.map(
+            doc => ({
+                name: doc.data().name,
+                category: doc.data().category,
+            })
+            );
+
+            // Filter completed (checked) items to only those not already in pantry
+            const newItems = completedItems.filter(li => {
+            return !pantryItems.some(p =>
+                p.name.toLowerCase() === li.name.toLowerCase() &&
+                p.category.toLowerCase() === li.category.toLowerCase()
+            );
+            });
+
+            // Add each unique (non-duplicate) item to pantry
+            for (const item of newItems) {
+            const { completed, ...pantryItem } = item;
+            await addDoc(collection(firestore, "pantry"), pantryItem);
+            }
+
+            // Remove checked items from the list
+            const remainingItems = listItems.filter(item => !item.completed);
+            await updateDoc(listRef, { items: remainingItems });
+
+            setOptionsModalVisible(false);
+            Alert.alert("Moved", "Checked items have been moved to pantry.");
+        } catch (error) {
+            console.error("Error moving items to pantry:", error);
+            Alert.alert("Error", "Failed to move items to pantry.");
+        }
+    }
 
     async function handleDeleteAll() {
         if (!listRef) return;
@@ -239,7 +278,7 @@ export default function ListDetailScreen() {
                             <MaterialIcons name="done-all" size={24} color="#8D8D90" />
                             <Text style={styles.optionText}>Check off all items</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.option} onPress={() => { /* your logic */ }}>
+                        <TouchableOpacity style={styles.option} onPress={handleMoveCheckedToPantry}>
                             <MaterialCommunityIcons name="cart-arrow-right" size={24} color="#8D8D90" />
                             <Text style={styles.optionText}>Move checked items to pantry</Text>
                         </TouchableOpacity>
@@ -430,11 +469,11 @@ export default function ListDetailScreen() {
             </View>
         )}
         {/* Positioned absolutely - always visible */}
-        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
-            <TouchableOpacity onPress={() => router.push(`/list/${id}/add-list-item`)}>
+        <TouchableOpacity onPress={() => router.push(`/list/${id}/add-list-item`)}>
+            <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
                 <Text style={styles.addButtonText}>+ Add</Text>
-            </TouchableOpacity>
-        </Animated.View>
+            </Animated.View>
+        </TouchableOpacity>
 
         {/* Tab Bar */}
         <TabBar

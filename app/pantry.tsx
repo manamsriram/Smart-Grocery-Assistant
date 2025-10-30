@@ -255,11 +255,11 @@ export default function PantryScreen() {
       </Modal>
 
       {/* Add Button */}
-      <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
-        <TouchableOpacity onPress={() => router.push("/pantry/add-item")}>
+      <TouchableOpacity onPress={() => router.push("/pantry/add-item")}>
+        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
           <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
-      </Animated.View>
+        </Animated.View>
+      </TouchableOpacity>
 
       <TabBar
         activeTab="Pantry"
