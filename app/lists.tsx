@@ -261,7 +261,7 @@ export default function ListsScreen() {
         onTabPress={(tab) => {
           if (tab === "Lists") return;
           if (tab === "Pantry") router.push("/pantry");
-          // if (tab === "Recipes") router.push("/recipes");
+          if (tab === "Recipes") router.push("/recipes");
           if (tab === "Profile") router.push("/profile");
         }}
       />
