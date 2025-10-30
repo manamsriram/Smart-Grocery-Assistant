@@ -409,14 +409,13 @@ export default function ListDetailScreen() {
                                         style={styles.inputBoxText}
                                         value={editedValues.expirationDate ?? ""}
                                         onChangeText={(value) => handleInputChange("expirationDate", value)}
-                                        placeholder="10/28/2025" 
+                                        placeholder="MM/DD/YYYY" 
                                     />
                                 </View>
                             </View>
                         </KeyboardAvoidingView>
                     </View>
                 </Modal>
-
 
             </Animated.ScrollView>
         ) : (
