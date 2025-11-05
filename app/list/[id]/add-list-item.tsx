@@ -4,7 +4,6 @@ import { arrayUnion, collection, doc, getDoc, getDocs, updateDoc } from "firebas
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../../firebaseConfig";
-import TabBar from "../../components/TabBar";
 
 type Item = {
   id: string;
@@ -124,16 +123,6 @@ export default function AddListItemScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Tab Bar */}
-      <TabBar
-        activeTab="Lists"
-        onTabPress={(tab) => {
-          if (tab === "Lists") return;
-          if (tab === "Pantry") router.push("/pantry");
-          if (tab === "Profile") router.push("/profile");
-        }}
-      />
     </View>
   );
 }

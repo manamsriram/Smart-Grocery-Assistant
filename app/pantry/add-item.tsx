@@ -4,7 +4,6 @@ import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
-import TabBar from "../components/TabBar";
 
 type Item = {
   id: string;             
@@ -114,16 +113,6 @@ useEffect(() => {
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Tab Bar */}
-      <TabBar
-        activeTab="Pantry"
-        onTabPress={(tab) => {
-          if (tab === "Pantry") return;
-          if (tab === "Lists") router.push("/lists");
-          if (tab === "Profile") router.push("/profile");
-        }}
-      />
     </View>
   );
 }

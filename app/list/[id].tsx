@@ -7,7 +7,6 @@ import { firestore } from "../../firebaseConfig";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
-import TabBar from "../components/TabBar";
 
 
 type Item = {
@@ -473,17 +472,7 @@ export default function ListDetailScreen() {
             <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
                 <Text style={styles.addButtonText}>+ Add</Text>
             </Animated.View>
-        </TouchableOpacity>
-
-        {/* Tab Bar */}
-        <TabBar
-            activeTab="Lists"
-            onTabPress={(tab) => {
-            if (tab === "Lists") return;
-            if (tab === "Pantry") router.push("/pantry");
-            if (tab === "Profile") router.push("/profile");
-            }}
-        />
+        </TouchableOpacity>       
         </View>
     );
 }

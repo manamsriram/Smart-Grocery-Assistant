@@ -6,7 +6,6 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { app } from "../firebaseConfig";
 import Header from "./components/Header";
 import InputModal from "./components/InputModal";
-import TabBar from "./components/TabBar";
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -173,16 +172,6 @@ export default function AccountScreen() {
         onSave={handleSaveEdit}
         onClose={() => setEditModalVisible(false)}
         secureTextEntry={modalMode === 'password'}
-      />
-      
-      {/* Tab Bar */}
-      <TabBar
-        activeTab="Profile"
-        onTabPress={(tab) => {
-          if (tab === "Lists") router.push("/lists");
-          if (tab === "Profile") return;
-          if (tab === "Pantry") router.push("/pantry");
-        }}
       />
     </View>
   );
