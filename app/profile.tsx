@@ -97,6 +97,7 @@ export default function ProfileScreen() {
         onTabPress={(tab) => {
           if (tab === "Lists") router.push("/lists");
           if (tab === "Pantry") router.push("/pantry");
+          if (tab === "Recipes") router.push("/recipes");
           if (tab === "Profile") return;
         }}
       />

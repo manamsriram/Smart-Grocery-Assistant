@@ -266,6 +266,7 @@ export default function PantryScreen() {
         onTabPress={(tab) => {
           if (tab === "Pantry") return;
           if (tab === "Lists") router.push("/lists");
+          if (tab === "Recipes") router.push("/recipes");
           if (tab === "Profile") router.push("/profile");
         }}
       />

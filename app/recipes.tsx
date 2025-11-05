@@ -2,11 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { firestore } from "../firebaseConfig";
 import TabBar from "./components/TabBar";
-
-const SPOONACULAR_API_KEY = "cb11c1f40950476785ea9a00368c000d";
 
 const filters = [
   { label: "All", key: "all" },
@@ -17,61 +24,73 @@ const filters = [
 ];
 
 export default function RecipesScreen() {
-    const router = useRouter()
-    const [activeFilter, setActiveFilter] = useState("all");
-    const [search, setSearch] = useState("");
-    const [pantryItems, setPantryItems] = useState<string[]>([]);
-    const [recipes, setRecipes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-
-  // Fetch items in pantry from Firestore
+  // Fetch pantry items from Firestore
   useEffect(() => {
     async function fetchPantry() {
       const snap = await getDocs(collection(firestore, "pantry"));
-      setPantryItems(
-        snap.docs.map(doc => doc.data().name).filter(Boolean)
-      );
+      setPantryItems(snap.docs.map(doc => doc.data().name).filter(Boolean));
     }
     fetchPantry();
   }, []);
 
-  // Fetch recipes from API when pantry updates
+  // Fetch recipes from TheMealDB when pantry updates
   useEffect(() => {
     if (pantryItems.length === 0) return;
+
     async function fetchRecipes() {
       setLoading(true);
-      const ingredientsParam = encodeURIComponent(pantryItems.join(","));
-      // You can adjust number=10 to return more results
-      const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredientsParam}&number=10&apiKey=${SPOONACULAR_API_KEY}`;
       try {
-        const response = await fetch(url);
-        const data = await response.json();
-        setRecipes(data);
+        let collectedMeals: any[] = [];
+
+        // TheMealDB only supports one ingredient per query
+        for (const item of pantryItems) {
+          const url = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(
+            item
+          )}`;
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data.meals) {
+            collectedMeals = [...collectedMeals, ...data.meals];
+          }
+        }
+
+        // Deduplicate by meal ID
+        const uniqueMeals = Object.values(
+          collectedMeals.reduce((acc: any, meal: any) => {
+            acc[meal.idMeal] = meal;
+            return acc;
+          }, {})
+        );
+
+        setRecipes(uniqueMeals);
       } catch (e) {
+        console.error("Error fetching from TheMealDB:", e);
         setRecipes([]);
       } finally {
         setLoading(false);
       }
     }
+
     fetchRecipes();
   }, [pantryItems]);
 
-  // Filter and search logic (Spoonacular response has no "label" field, so adapt these as needed)
+  // Filtering logic (placeholder for now, since TheMealDB doesn't have categories on filter endpoint)
   const filteredRecipes =
-  activeFilter === "all"
-    ? recipes || []
-    : recipes.filter(r =>
-        (r.badges || []).some((badge: string) =>
-          badge.toLowerCase() === activeFilter.toLowerCase()
-        )
-      ) || [];
+    activeFilter === "all" ? recipes || [] : recipes || [];
 
-const searchedRecipes = search
-  ? filteredRecipes.filter(r =>
-      r.title.toLowerCase().includes(search.toLowerCase())
-    )
-  : filteredRecipes;
+  // Search logic
+  const searchedRecipes = search
+    ? filteredRecipes.filter(r =>
+        r.strMeal.toLowerCase().includes(search.toLowerCase())
+      )
+    : filteredRecipes;
 
   return (
     <View style={styles.container}>
@@ -114,7 +133,7 @@ const searchedRecipes = search
       </View>
 
       {loading ? (
-        <View style={{flex:1, alignItems:'center', justifyContent:'center'}}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color="#22c55e" />
         </View>
       ) : (
@@ -125,38 +144,36 @@ const searchedRecipes = search
             </Text>
           )}
           {searchedRecipes.map(recipe => (
-            <View key={recipe.id} style={styles.recipeCard}>
-              <View style={styles.imageWrapper}>
-                <Image
-                  source={{ uri: recipe.image }}
-                  style={styles.recipeImage}
-                  resizeMode="cover"
-                />
-                {/* You can add more badges if API provides. */}
-                {/* <View style={styles.labelBadge}><Text style={styles.labelText}>Healthy</Text></View> */}
-              </View>
-              <Text style={styles.recipeTitle}>{recipe.title}</Text>
-              <View style={styles.recipeSubInfo}>
-                <Text style={styles.recipeSubText}>
-                  {recipe.usedIngredientCount + recipe.missedIngredientCount} ingredients
-                </Text>
-                <Text style={styles.dot}>•</Text>
-                <Text style={styles.recipeSubText}>
-                  {recipe.readyInMinutes ? `${recipe.readyInMinutes}-min` : ""}
-                </Text>
-              </View>
-            </View>
-          ))}
+  <TouchableOpacity
+    key={recipe.idMeal}
+    style={styles.recipeCard}
+    onPress={() => router.push(`/recipe/${recipe.idMeal}`)}
+  >
+    <View style={styles.imageWrapper}>
+      <Image
+        source={{ uri: recipe.strMealThumb }}
+        style={styles.recipeImage}
+        resizeMode="cover"
+      />
+    </View>
+    <Text style={styles.recipeTitle}>{recipe.strMeal}</Text>
+    <View style={styles.recipeSubInfo}>
+      <Text style={styles.recipeSubText}>Ingredient match</Text>
+    </View>
+  </TouchableOpacity>
+))}
+
         </ScrollView>
       )}
 
+      {/* Bottom Tab Bar */}
       <TabBar
         activeTab="Recipes"
         onTabPress={tab => {
-             if (tab === "Lists") return;
-            if (tab === "Pantry") router.push("/pantry");
-            if (tab === "Recipes") return;
-            if (tab === "Profile") router.push("/profile");
+          if (tab === "Lists") return;
+          if (tab === "Pantry") router.push("/pantry");
+          if (tab === "Recipes") return;
+          if (tab === "Profile") router.push("/profile");
         }}
       />
     </View>
@@ -230,16 +247,6 @@ const styles = StyleSheet.create({
     height: 155,
     borderRadius: 16,
   },
-  labelBadge: {
-    position: "absolute",
-    top: 11,
-    left: 11,
-    backgroundColor: "#24c141",
-    paddingHorizontal: 11,
-    paddingVertical: 3,
-    borderRadius: 23,
-  },
-  labelText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   recipeTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 5 },
   recipeSubInfo: {
     flexDirection: "row",
@@ -247,6 +254,4 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   recipeSubText: { fontSize: 15, color: "#777" },
-  dot: { fontSize: 20, color: "#bbb", marginHorizontal: 7 },
 });
-
