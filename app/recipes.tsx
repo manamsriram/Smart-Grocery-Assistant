@@ -23,11 +23,19 @@ const filters = [
   { label: "Uses Expiring", key: "expiring" },
 ];
 
+// Define sets for tags and categories
+const healthyTags = new Set(["Vegetarian", "Vegan", "Soup", "SideDish", "Salad"]);
+const healthyCategories = new Set(["Vegetarian", "Vegan", "Soup", "Side", "Salad"]);
+
+const quickTags = new Set(["Onthego", "Streetfood", "Snack", "Breakfast", "SideDish"]);
+const quickCategories = new Set(["Breakfast", "Snack", "Side"]);
+
 export default function RecipesScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [pantryItems, setPantryItems] = useState<string[]>([]);
+  const [pantryItems, setPantryItems] = useState<{ name: string; expirationDate: string | null }[]>([]);
+
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,57 +43,145 @@ export default function RecipesScreen() {
   useEffect(() => {
     async function fetchPantry() {
       const snap = await getDocs(collection(firestore, "pantry"));
-      setPantryItems(snap.docs.map(doc => doc.data().name).filter(Boolean));
+      setPantryItems(
+        snap.docs
+          .map(doc => ({
+            name: doc.data().name,
+            expirationDate: doc.data().expirationDate || null,
+          }))
+          .filter(item => item.name)
+      );
     }
     fetchPantry();
   }, []);
 
-  // Fetch recipes from TheMealDB when pantry updates
   useEffect(() => {
-    if (pantryItems.length === 0) return;
+  if (pantryItems.length === 0) return;
 
-    async function fetchRecipes() {
-      setLoading(true);
-      try {
-        let collectedMeals: any[] = [];
+  async function fetchRecipes() {
+    setLoading(true);
+    try {
+      let collectedMeals: any[] = [];
 
-        // TheMealDB only supports one ingredient per query
-        for (const item of pantryItems) {
-          const url = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(
-            item
-          )}`;
-          const response = await fetch(url);
-          const data = await response.json();
-          if (data.meals) {
-            collectedMeals = [...collectedMeals, ...data.meals];
-          }
+      // 1️⃣ Fetch meals for each pantry ingredient
+      for (const item of pantryItems) {
+        const url = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(item.name)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.meals) {
+          collectedMeals = [...collectedMeals, ...data.meals];
         }
-
-        // Deduplicate by meal ID
-        const uniqueMeals = Object.values(
-          collectedMeals.reduce((acc: any, meal: any) => {
-            acc[meal.idMeal] = meal;
-            return acc;
-          }, {})
-        );
-
-        setRecipes(uniqueMeals);
-      } catch (e) {
-        console.error("Error fetching from TheMealDB:", e);
-        setRecipes([]);
-      } finally {
-        setLoading(false);
       }
-    }
 
-    fetchRecipes();
-  }, [pantryItems]);
+      // 2️⃣ Deduplicate by meal ID
+      const uniqueMeals = Object.values(
+        collectedMeals.reduce((acc: any, meal: any) => {
+          acc[meal.idMeal] = meal;
+          return acc;
+        }, {})
+      );
+
+      // 3️⃣ Fetch full details for each unique meal
+      const detailedMeals = await Promise.all(
+        uniqueMeals.map(async (meal: any) => {
+          const detailRes = await fetch(
+            `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`
+          );
+          const detailData = await detailRes.json();
+          return detailData.meals?.[0]; // each returns an array with 1 meal
+        })
+      );
+
+      // 4️⃣ Filter out any null responses
+      const validMeals = detailedMeals.filter(Boolean);
+
+      setRecipes(validMeals);
+    } catch (e) {
+      console.error("Error fetching from TheMealDB:", e);
+      setRecipes([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchRecipes();
+}, [pantryItems]);
+
+ const getExpiringIngredients = (daysAhead = 7) => {
+  const now = new Date();
+  const soon = new Date();
+  soon.setDate(now.getDate() + daysAhead);
+
+  return pantryItems
+    .filter(item => {
+      if (!item.expirationDate) return false;
+      const [mm, dd, yyyy] = item.expirationDate.split("/");
+      const expDate = new Date(`${yyyy}-${mm}-${dd}`);
+      return expDate >= now && expDate <= soon;
+    })
+    .map(item => {
+      const [mm, dd, yyyy] = item.expirationDate!.split("/");
+      const expDate = new Date(`${yyyy}-${mm}-${dd}`);
+      const diffTime = expDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return { name: item.name.toLowerCase(), daysLeft: diffDays };
+    });
+};
 
   // Filtering logic (placeholder for now, since TheMealDB doesn't have categories on filter endpoint)
-  const filteredRecipes =
-    activeFilter === "all" ? recipes || [] : recipes || [];
+  const filteredRecipes = recipes.filter(recipe => {
+  if (activeFilter === "all") return true;
 
-  // Search logic
+  const tags: string[] = recipe.strTags
+    ? recipe.strTags.split(",").map((t: string) => t.trim())
+    : [];
+  const category = recipe.strCategory?.toLowerCase() || "";
+
+  switch (activeFilter) {
+     case "healthy":
+      return (
+        tags.some(tag => healthyTags.has(tag)) ||
+        healthyCategories.has(category)
+      );
+
+    case "quick":
+      return (
+        tags.some(tag => quickTags.has(tag)) ||
+        quickCategories.has(category)
+      );
+    case "budget":
+      return tags.includes("budget") || category.includes("miscellaneous");
+   case "expiring": {
+  const expiringIngredients = getExpiringIngredients(7); // next 7 days
+  if (expiringIngredients.length === 0) return false;
+
+  const ingredients: string[] = [];
+  for (let i = 1; i <= 20; i++) {
+    const ing = recipe[`strIngredient${i}` as keyof typeof recipe];
+    if (typeof ing === "string" && ing.trim() !== "") {
+      ingredients.push(ing.toLowerCase());
+    }
+  }
+
+  // Find which expiring ingredients appear in this recipe
+  const matchedExpiring = expiringIngredients.filter(exp =>
+    ingredients.some(ing => ing.includes(exp.name))
+  );
+
+  // Attach matched expiring ingredients to recipe for display
+  (recipe as any).matchedExpiring = matchedExpiring;
+
+  return matchedExpiring.length > 0;
+}
+
+
+    default:
+      return true;
+  }
+});
+
+
+// Search logic
   const searchedRecipes = search
     ? filteredRecipes.filter(r =>
         r.strMeal.toLowerCase().includes(search.toLowerCase())
@@ -137,32 +233,31 @@ export default function RecipesScreen() {
           <ActivityIndicator size="large" color="#22c55e" />
         </View>
       ) : (
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }}>
           {searchedRecipes.length === 0 && (
             <Text style={{ alignSelf: "center", marginTop: 40, color: "#888" }}>
               No recipes found
             </Text>
           )}
           {searchedRecipes.map(recipe => (
-  <TouchableOpacity
-    key={recipe.idMeal}
-    style={styles.recipeCard}
-    onPress={() => router.push(`/recipe/${recipe.idMeal}`)}
-  >
-    <View style={styles.imageWrapper}>
-      <Image
-        source={{ uri: recipe.strMealThumb }}
-        style={styles.recipeImage}
-        resizeMode="cover"
-      />
-    </View>
-    <Text style={styles.recipeTitle}>{recipe.strMeal}</Text>
-    <View style={styles.recipeSubInfo}>
-      <Text style={styles.recipeSubText}>Ingredient match</Text>
-    </View>
-  </TouchableOpacity>
-))}
-
+            <TouchableOpacity
+              key={recipe.idMeal}
+              style={styles.recipeCard} 
+              onPress={() => router.push(`/recipe/${recipe.idMeal}`)}
+            >
+              <View style={styles.imageWrapper}>
+                <Image
+                  source={{ uri: recipe.strMealThumb }}
+                  style={styles.recipeImage}
+                  resizeMode="cover"
+                />
+              </View>
+              <Text style={styles.recipeTitle}>{recipe.strMeal}</Text>
+              <View style={styles.recipeSubInfo}>
+                <Text style={styles.recipeSubText}>Ingredient match</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       )}
 
