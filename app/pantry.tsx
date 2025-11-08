@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { collection, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
@@ -31,6 +32,10 @@ export default function PantryScreen() {
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<Item> | null>(null);
   const [editedValues, setEditedValues] = useState<Partial<Item>>({});
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
 
   const onItemPress = (item: Item) => {
     setEditingItem(item);
@@ -74,14 +79,14 @@ export default function PantryScreen() {
     return acc;
   }, {});
 
- async function deleteItemFromPantry(itemId: string) {
-  try {
-    await deleteDoc(doc(firestore, "pantry", itemId));
-  } catch (error) {
-    console.warn("Failed to delete item:", error);
-    Alert.alert("Error", "Failed to delete item. Please try again.");
+  async function deleteItemFromPantry(itemId: string) {
+    try {
+      await deleteDoc(doc(firestore, "pantry", itemId));
+    } catch (error) {
+      console.warn("Failed to delete item:", error);
+      Alert.alert("Error", "Failed to delete item. Please try again.");
+    }
   }
-}
   const hasItems = pantryItems.length > 0;
 
   function dedupeItems(items: Item[]) {
@@ -220,7 +225,7 @@ export default function PantryScreen() {
                 <TextInput
                   style={styles.inputBoxText}
                   value={editedValues.quantity ?? ""}
-                  onChangeText={(v) => handleInputChange("quantity", v)}
+                  onChangeText={(v) => handleInputChange("quantity",  v.replace(/[^0-9.]/g, ""))}
                   placeholder="1"
                   keyboardType="numeric"
                 />
@@ -241,16 +246,95 @@ export default function PantryScreen() {
                   onChangeText={(v) => handleInputChange("unit", v)}
                   placeholder="Unit"
                 />
-                <Text style={styles.label}>Expiration Date</Text>
-                <TextInput
-                  style={styles.inputBoxText}
-                  value={editedValues.expirationDate ?? ""}
-                  onChangeText={(v) => handleInputChange("expirationDate", v)}
-                  placeholder="MM/DD/YYYY"
+
+              <Text style={styles.label}>Expiration Date</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  // Pre-fill the picker with the existing expiration date (if valid)
+                  if (editedValues.expirationDate) {
+                    const parts = editedValues.expirationDate.split("/");
+                    if (parts.length === 3) {
+                      const [mm, dd, yyyy] = parts;
+                      const date = new Date(`${yyyy}-${mm}-${dd}`);
+                      if (!isNaN(date.getTime())) setTempDate(date);
+                    }
+                  }
+                  setShowDatePickerModal(true);
+                }}
+              >
+                <View pointerEvents="none">
+                  <TextInput
+                    style={styles.inputBoxText}
+                    value={editedValues.expirationDate ?? ""}
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              </View>
+            </View>
+             {showDatePicker && (
+            <DateTimePicker
+              value={tempDate || new Date()}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) {
+                  const formatted = `${String(selectedDate.getMonth() + 1).padStart(2, "0")}/${String(
+                    selectedDate.getDate()
+                  ).padStart(2, "0")}/${selectedDate.getFullYear()}`;
+                  handleInputChange("expirationDate", formatted);
+                  setTempDate(selectedDate);
+                }
+              }}
+            />
+          )}
+          </KeyboardAvoidingView>
+         
+          {/* Date Picker Modal */}
+          <Modal
+            visible={showDatePickerModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowDatePickerModal(false)}
+          >
+            <View style={styles.datePickerOverlay}>
+              <TouchableWithoutFeedback onPress={() => setShowDatePickerModal(false)}>
+                <View style={styles.background} />
+              </TouchableWithoutFeedback>
+
+              <View style={styles.datePickerContainer}>
+                <View style={styles.datePickerHeader}>
+                  <TouchableOpacity onPress={() => setShowDatePickerModal(false)}>
+                    <Text style={{ fontSize: 18, color: "#dc3545", fontWeight: "500" }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const formatted = `${String(tempDate.getMonth() + 1).padStart(2, "0")}/${String(
+                        tempDate.getDate()
+                      ).padStart(2, "0")}/${tempDate.getFullYear()}`;
+                      handleInputChange("expirationDate", formatted);
+                      setShowDatePickerModal(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) setTempDate(selectedDate);
+                  }}
+                  style={{ alignSelf: "center" }}
                 />
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </Modal>
+
         </View>
       </Modal>
 
@@ -374,5 +458,23 @@ const styles = StyleSheet.create({
         color: "#888",
         marginTop: 3,
         marginLeft: 2,
+    },
+    datePickerOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0,0,0,0.01)",
+    },
+    datePickerContainer: {
+      backgroundColor: "#fff",
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingVertical: 20,
+      paddingHorizontal: 18,
+    },
+    datePickerHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
     },
 });
