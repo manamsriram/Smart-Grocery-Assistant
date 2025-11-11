@@ -19,7 +19,7 @@ const filters = [
   { label: "All", key: "all" },
   { label: "Healthy", key: "healthy" },
   { label: "Quick", key: "quick" },
-  { label: "Budget", key: "budget" },
+  { label: "Pantry-friendly", key: "pantry" }, // “Pantry-friendly”: Recipes that use mostly ingredients you already have (no price needed)
   { label: "Uses Expiring", key: "expiring" },
 ];
 
@@ -107,6 +107,27 @@ export default function RecipesScreen() {
   fetchRecipes();
 }, [pantryItems]);
 
+  const getPantryMatchCount = (recipe: any) => {
+    const ingredients: string[] = [];
+    for (let i = 1; i <= 20; i++) {
+      const ing = recipe[`strIngredient${i}` as keyof typeof recipe];
+      if (typeof ing === "string" && ing.trim() !== "") {
+        ingredients.push(ing.toLowerCase());
+      }
+    }
+
+    const pantryNames = pantryItems.map(item => item.name.toLowerCase());
+    const matched = ingredients.filter(ing =>
+      pantryNames.some(p => ing.includes(p))
+    );
+
+    return {
+      matchedIngredients: matched,
+      totalIngredients: ingredients.length,
+    };
+  };
+
+
  const getExpiringIngredients = (daysAhead = 7) => {
   const now = new Date();
   const soon = new Date();
@@ -149,8 +170,14 @@ export default function RecipesScreen() {
         tags.some(tag => quickTags.has(tag)) ||
         quickCategories.has(category)
       );
-    case "budget":
-      return tags.includes("budget") || category.includes("miscellaneous");
+
+    case "pantry": {
+      const { matchedIngredients, totalIngredients } = getPantryMatchCount(recipe);
+      // Consider pantry-friendly if at least 50% of ingredients are in pantry
+      (recipe as any).matchedPantry = matchedIngredients;
+      return totalIngredients > 0 && matchedIngredients.length / totalIngredients >= 0.5;
+    }
+
    case "expiring": {
   const expiringIngredients = getExpiringIngredients(7); // next 7 days
   if (expiringIngredients.length === 0) return false;
