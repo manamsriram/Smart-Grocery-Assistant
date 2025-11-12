@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function RecipeDetailsScreen() {
@@ -23,12 +23,26 @@ export default function RecipeDetailsScreen() {
         const res = await fetch(
           `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`
         );
+        if (!res.ok) {
+          console.error(`API returned status ${res.status}`);
+          setMeal(null);
+          return;
+        }
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          console.error(`Expected JSON but got ${contentType}`);
+          setMeal(null);
+          return;
+        }
         const data = await res.json();
         if (data.meals && data.meals.length > 0) {
           setMeal(data.meals[0]);
+        } else {
+          setMeal(null);
         }
       } catch (err) {
         console.error("Error fetching meal details:", err);
+        setMeal(null);
       } finally {
         setLoading(false);
       }

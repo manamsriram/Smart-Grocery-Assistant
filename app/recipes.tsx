@@ -66,10 +66,24 @@ export default function RecipesScreen() {
       // 1️⃣ Fetch meals for each pantry ingredient
       for (const item of pantryItems) {
         const url = `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(item.name)}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.meals) {
-          collectedMeals = [...collectedMeals, ...data.meals];
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.warn(`API returned status ${response.status} for ingredient: ${item.name}`);
+            continue;
+          }
+          const contentType = response.headers.get("content-type");
+          if (!contentType?.includes("application/json")) {
+            console.warn(`Expected JSON but got ${contentType} for ingredient: ${item.name}`);
+            continue;
+          }
+          const data = await response.json();
+          if (data.meals) {
+            collectedMeals = [...collectedMeals, ...data.meals];
+          }
+        } catch (itemError) {
+          console.warn(`Failed to fetch recipes for ingredient "${item.name}":`, itemError);
+          continue;
         }
       }
 
@@ -84,11 +98,25 @@ export default function RecipesScreen() {
       // 3️⃣ Fetch full details for each unique meal
       const detailedMeals = await Promise.all(
         uniqueMeals.map(async (meal: any) => {
-          const detailRes = await fetch(
-            `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`
-          );
-          const detailData = await detailRes.json();
-          return detailData.meals?.[0]; // each returns an array with 1 meal
+          try {
+            const detailRes = await fetch(
+              `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`
+            );
+            if (!detailRes.ok) {
+              console.warn(`API returned status ${detailRes.status} for meal ID: ${meal.idMeal}`);
+              return null;
+            }
+            const contentType = detailRes.headers.get("content-type");
+            if (!contentType?.includes("application/json")) {
+              console.warn(`Expected JSON but got ${contentType} for meal ID: ${meal.idMeal}`);
+              return null;
+            }
+            const detailData = await detailRes.json();
+            return detailData.meals?.[0]; // each returns an array with 1 meal
+          } catch (detailError) {
+            console.warn(`Failed to fetch details for meal ID ${meal.idMeal}:`, detailError);
+            return null;
+          }
         })
       );
 
