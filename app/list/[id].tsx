@@ -467,12 +467,18 @@ export default function ListDetailScreen() {
                 </TouchableOpacity>
             </View>
         )}
-        {/* Positioned absolutely - always visible */}
-        <TouchableOpacity onPress={() => router.push(`/list/${id}/add-list-item`)}>
-            <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]}>
+        {/* Positioned absolutely - always visible. Use an explicit touchable placed inside an absolutely-positioned container
+            so the button sits above overlays and receives touches reliably. Add hitSlop and elevation/zIndex for good measure. */}
+        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]} pointerEvents="box-none">
+            <TouchableOpacity
+                style={styles.addButtonTouchable}
+                onPress={() => router.push(`/list/${id}/add-list-item`)}
+                activeOpacity={0.85}
+                hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
+            >
                 <Text style={styles.addButtonText}>+ Add</Text>
-            </Animated.View>
-        </TouchableOpacity>       
+            </TouchableOpacity>
+        </Animated.View>
         </View>
     );
 }
@@ -627,6 +633,16 @@ const styles = StyleSheet.create({
         marginBottom: 36,
         flexDirection: "row",
         alignItems: "center",
+        zIndex: 100,
+        elevation: 10, // Android
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+    },
+    addButtonTouchable: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     addButtonText: {
         color: "#fff",

@@ -1,34 +1,30 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
-import PrimaryButton from './components/PrimaryButton';
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function GetStartedScreen() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>      
-      <View style={styles.topSection}>
-        <Image
-          source={require("../assets/welcomePage-bg-pic.png")}
-          style={styles.heroImage}
-          resizeMode="cover"
-        />
-        <Text style={styles.title}>PantryPal</Text>
-        <Text style={styles.subtitle}>
-          Track groceries, budget, and{"\n"}get tailored meal suggestions
-        </Text>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>PantryPal</Text>
+      <Text style={styles.subtitle}>
+          Track groceries, control budget, get meal suggestions
+      </Text>
 
-      <View style={styles.bottomSection}>        
-        <PrimaryButton
-          text="Get Started"
-          iconName="chevron-right"      
-          iconPosition="right"           
-          width="100%"
-          onPress={() => router.push("/(auth)/login")}
-        />
-      </View>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={() => router.push("/(auth)/signup")}
+      >
+        <Text style={styles.buttonText}>Create Account</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => router.push("/(auth)/login")}
+      >
+        <Text style={styles.secondaryButtonText}>Log In</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -36,37 +32,48 @@ export default function GetStartedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#fff",
     padding: 20,
-    justifyContent: 'space-around',
-  },
-  topSection: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 200,
-    gap: 10,
-  },
-  heroImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 20,
-    marginBottom: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 10,
     color: "#333",
-    textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
     color: "#666",
     textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 28,
+    marginBottom: 40,
   },
-  bottomSection: {
-    marginBottom: 0,
+  primaryButton: {
+    width: "100%",
+    backgroundColor: "#007bff",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  secondaryButton: {
+    width: "100%",
+    backgroundColor: "#f8f9fa",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#007bff",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  secondaryButtonText: {
+    color: "#007bff",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });
