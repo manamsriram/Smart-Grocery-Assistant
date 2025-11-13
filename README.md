@@ -171,7 +171,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - Forked from [tringo286/Smart-Grocery-Assistant](https://github.com/tringo286/Smart-Grocery-Assistant)
 - Built with [Expo](https://expo.dev/)
-- Recipe API integration for smart suggestions
+- Recipe API integration for smart suggestions [TheMealDB](https://www.themealdb.com/)
 
 ## Contact
 
