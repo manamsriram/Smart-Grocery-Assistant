@@ -1,13 +1,14 @@
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, arrayRemove, collection, doc, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
-
 
 type Item = {
     id: string;             
@@ -33,10 +34,12 @@ export default function ListDetailScreen() {
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState<Partial<Item> | null>(null);
-
     const [editedValues, setEditedValues] = useState<Partial<Item>>({});
-
     const scrollY = React.useRef(new Animated.Value(0)).current;
+    const [scannerVisible, setScannerVisible] = useState(false);
+    const [permission, requestPermission] = useCameraPermissions()
+    const scanLockRef = React.useRef(false);  // ← CHANGE TO REF
+
     const addButtonOpacity = scrollY.interpolate({
         inputRange: [0, 150],
         outputRange: [1, 0.3],
@@ -240,6 +243,121 @@ export default function ListDetailScreen() {
         // Join with " - "
         return parts.join(" - ");
     }
+
+    // Add the barcode scanner handler
+const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    if (scanLockRef.current) return;  // ← Use .current
+    scanLockRef.current = true;       // ← Use .current
+
+    setScannerVisible(false);
+    
+    try {
+        const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
+        const result = await response.json();
+        
+        if (result.status === 1) {
+            const product = result.product;
+            
+            const newItem: Item = {
+                id: Date.now().toString(),
+                name: product.product_name || "Unknown Product",
+                category: product.categories_tags?.[0]?.replace('en:', '') || "Other",
+                quantity: "1",
+                unit: "",
+                price: "",
+                expirationDate: "",
+                completed: false,
+            };
+            
+            // Check for duplicates BEFORE adding
+            const duplicate = listItems.find(
+                (i) =>
+                    i.name.trim().toLowerCase() === newItem.name.trim().toLowerCase() &&
+                    i.category.trim().toLowerCase() === newItem.category.trim().toLowerCase()
+            );
+
+            if (duplicate) {
+                setTimeout(() => {
+                    Alert.alert(
+                        "Already in list",
+                        `${newItem.name} is already in your list.`,
+                        [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
+                    );
+                }, 500);  // ← Increased to 500ms
+                return;
+            }
+            
+            // Add to list if not duplicate
+            if (!listRef) {
+                scanLockRef.current = false;  // ← Use .current
+                return;
+            }
+            
+            await updateDoc(listRef, {
+                items: [...listItems, newItem],
+            });
+            
+            setTimeout(() => {
+                Alert.alert(
+                    "Added!",
+                    `${newItem.name} has been added to your list.`,
+                    [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
+                );
+            }, 500);  // ← Increased to 500ms
+        } else {
+            setTimeout(() => {
+                Alert.alert(
+                    "Product Not Found",
+                    `Barcode: ${data}\nWould you like to add this item manually?`,
+                    [
+                        { text: "Cancel", style: "cancel", onPress: () => { scanLockRef.current = false; } },  // ← Use .current
+                        {
+                            text: "Add Manually",
+                            onPress: () => {
+                                scanLockRef.current = false;  // ← Use .current
+                                router.push(`/list/${id}/add-list-item`);
+                            },
+                        },
+                    ],
+                );
+            }, 500);  // ← Increased to 500ms
+        }
+    } catch (error) {
+        console.error("Error fetching product:", error);
+        setTimeout(() => {
+            Alert.alert(
+                "Error",
+                "Failed to look up product. Please try again.",
+                [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
+            );
+        }, 500);  // ← Increased to 500ms
+    }
+};
+
+
+    // Add function to open scanner
+    const openScanner = async () => {
+        scanLockRef.current = false;
+
+        if (!permission) {
+            await requestPermission();
+            return;
+        }
+        
+        if (!permission.granted) {
+            Alert.alert(
+                "Camera Permission Required",
+                "Please grant camera permission to scan barcodes.",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Grant Permission", onPress: requestPermission }
+                ]
+            );
+            return;
+        }
+        
+        setScannerVisible(true);
+    };
 
     return (
         <View style={styles.container}>
@@ -461,7 +579,10 @@ export default function ListDetailScreen() {
                 <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
                 <BodyTitle>Let’s plan your shopping</BodyTitle>
                 <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
-                <TouchableOpacity style={styles.scanBarcodesButton}>
+                <TouchableOpacity 
+                    style={styles.scanBarcodesButton}
+                    onPress={openScanner}
+                >
                     <Ionicons name="camera" size={20} color="#22c55e" />
                     <Text style={styles.scanText}>Scan Barcodes</Text>
                 </TouchableOpacity>
@@ -479,6 +600,18 @@ export default function ListDetailScreen() {
                 <Text style={styles.addButtonText}>+ Add</Text>
             </TouchableOpacity>
         </Animated.View>
+
+        {/* Barcode Scanner Modal */}
+       <BarcodeScannerModal
+            visible={scannerVisible}
+            onClose={() => {
+                setScannerVisible(false);
+                scanLockRef.current = false;  // ← Use .current
+            }}
+            permissionGranted={!!permission?.granted}
+            onBarcodeScanned={handleBarCodeScanned}
+        />
+
         </View>
     );
 }
@@ -692,5 +825,5 @@ const styles = StyleSheet.create({
         color: "#888",
         marginTop: 3,
         marginLeft: 2,
-        },
+        },    
 });

@@ -1,9 +1,11 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
 type Item = {
   id: string;             
@@ -22,7 +24,9 @@ export default function AddPantryItemScreen() {
   const filtered = !item
     ? []
     : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
-  const [pantryItems, setPantryItems] = useState<Item[]>([]);
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const scanLockRef = React.useRef(false);
   
 // Listen to pantry collection
 useEffect(() => {
@@ -57,20 +61,105 @@ useEffect(() => {
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
-    Alert.alert("Already in pantry", `${item.name} is already in your pantry.`);
+    setTimeout(() => {  // ← ADD setTimeout
+        Alert.alert(
+          "Already in pantry",
+          `${item.name} is already in your pantry.`,
+          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  
+        );
+      }, 500);
     return;
   }
 
   try {
     const { id, ...pantryItem } = item;
     await addDoc(pantryCol, pantryItem);
-    Alert.alert("Success", `${item.name} was added to your pantry.`);
+    setTimeout(() => {  // ← ADD setTimeout
+        Alert.alert(
+          "Success",
+          `${item.name} was added to your pantry.`,
+          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← UNLOCK
+        );
+    }, 500);
   } catch (error) {
     console.warn("Failed to add item to pantry:", error);
-    Alert.alert("Error", "Failed to add item to your pantry. Please try again.");
+    setTimeout(() => {  // ← ADD setTimeout
+        Alert.alert(
+          "Error",
+          "Failed to add item to your pantry. Please try again.",
+          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← UNLOCK
+        );
+    }, 500);
   }
 }
 
+  // Barcode Scanner Function
+  const openScanner = async () => {
+    scanLockRef.current = false;
+
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        Alert.alert(
+          "Camera Permission Needed",
+          "Please enable camera access to scan barcodes."
+        );
+        return;
+      }
+    }
+
+    setScannerVisible(true);
+  };
+
+   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    if (scanLockRef.current) return;
+    scanLockRef.current = true;
+
+    setScannerVisible(false);
+
+    try {
+      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
+      const result = await response.json();
+
+      if (result.status === 1) {
+        const product = result.product;
+
+        const newItem: Item = {
+          id: Date.now().toString(),
+          name: product.product_name || "Unknown Product",
+          category: product.categories_tags?.[0]?.replace("en:", "") || "Other",
+          quantity: "1",
+          unit: "",
+          price: "",
+          expirationDate: "",
+        };
+
+        await addItemToPantry(newItem);
+        return;
+      }
+
+      setTimeout(() => {
+        Alert.alert(
+          "Not Found",
+          `Barcode: ${data}\nThis item is not in the database. Add manually?`,
+          [
+            { text: "Cancel", style: "cancel", onPress: () => { scanLockRef.current = false; } },
+            { text: "Add Manually", onPress: () => { scanLockRef.current = false; } },
+          ]
+        );
+      }, 500);
+
+    } catch (error) {
+      console.error("Scan error:", error);
+      setTimeout(() => {
+        Alert.alert(
+          "Error",
+          "Unable to scan barcode. Try again.",
+          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]
+        );
+      }, 500);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -100,7 +189,7 @@ useEffect(() => {
         </View>
 
         {/* Camera Icon */}
-        <TouchableOpacity style={styles.iconRight}>
+        <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
           <Ionicons name="camera" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -113,6 +202,17 @@ useEffect(() => {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => {
+          setScannerVisible(false);
+          scanLockRef.current = false;
+        }}
+        permissionGranted={!!permission?.granted}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
     </View>
   );
 }

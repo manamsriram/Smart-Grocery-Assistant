@@ -1,4 +1,6 @@
+import BarcodeScannerModal from "@/app/components/BarcodeScannerModal";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayUnion, collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -32,6 +34,9 @@ export default function AddListItemScreen() {
   const filtered = !item
     ? []
     : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const scanLockRef = React.useRef(false);  // ← CHANGE TO REF
 
   useEffect(() => {
     async function fetchData() {
@@ -54,7 +59,7 @@ export default function AddListItemScreen() {
     fetchData();
   }, []);
 
-  async function addItemToCurrentList(item: Item) {
+async function addItemToCurrentList(item: Item) {
     if (!listId) return;
     const listRef = doc(firestore, "lists", listId);
 
@@ -70,7 +75,13 @@ export default function AddListItemScreen() {
             i.category.trim().toLowerCase() === item.category.trim().toLowerCase()
         );
         if (duplicate) {
-          Alert.alert("Already in list", `${item.name} is already in your list.`);
+          setTimeout(() => {  // ← ADD setTimeout
+            Alert.alert(
+              "Already in list", 
+              `${item.name} is already in your list.`,
+              [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]
+            );
+          }, 500);  // ← 500ms delay
           return;
         }
       }
@@ -78,12 +89,95 @@ export default function AddListItemScreen() {
       await updateDoc(listRef, {
         items: arrayUnion(item),
       });
-      Alert.alert("Success", `${item.name} was added to your list.`);
+      
+      setTimeout(() => {  // ← ADD setTimeout
+        Alert.alert(
+          "Success", 
+          `${item.name} was added to your list.`,
+          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]
+        );
+      }, 500);  // ← 500ms delay
     } catch (error) {
       console.warn("Failed to add item to current list:", error);
-      Alert.alert("Error", "Failed to add item to your list. Please try again.");
+      setTimeout(() => {  // ← ADD setTimeout
+        Alert.alert(
+          "Error", 
+          "Failed to add item to your list. Please try again.",
+          [{ text: "OK", onPress: () => scanLockRef.current = false }]
+        );
+      }, 500);  // ← 500ms delay
     }
-  }
+}
+
+  const openScanner = async () => {
+    scanLockRef.current = false;
+
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        Alert.alert(
+          "Camera Permission Needed",
+          "Please enable camera access to scan barcodes."
+        );
+        return;
+      }
+    }
+
+    setScannerVisible(true);
+  };
+
+ 
+const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    if (scanLockRef.current) return;  // ← Use .current
+    scanLockRef.current = true;
+
+    setScannerVisible(false);
+
+    try {
+        const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
+        const result = await response.json();
+
+        if (result.status === 1) {
+            const product = result.product;
+
+            const newItem: Item = {
+                id: Date.now().toString(),
+                name: product.product_name || "Unknown Product",
+                category: product.categories_tags?.[0]?.replace("en:", "") || "Other",
+                quantity: "1",
+                unit: "",
+                price: "",
+                expirationDate: "",
+            };
+
+            await addItemToCurrentList(newItem);
+            return;
+        }
+
+        // Not found → let them add manually
+        setTimeout(() => {  // ← ADD setTimeout
+            Alert.alert(
+                "Not Found",
+                `Barcode: ${data}\nThis item is not in the database. Add manually?`,
+                [
+                    { text: "Cancel", style: "cancel", onPress: () => { scanLockRef.current = false; } },
+                    { text: "Add Manually", onPress: () => { scanLockRef.current = false; } },
+                ]
+            );
+        }, 500);  // ← 500ms delay
+
+    } catch (error) {
+        console.error("Scan error:", error);
+        setTimeout(() => {  // ← ADD setTimeout
+            Alert.alert(
+                "Error", 
+                "Unable to scan barcode. Try again.",
+                [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]
+            );
+        }, 500);  // ← 500ms delay
+    }
+};
+
 
   return (
     <View style={styles.container}>
@@ -110,7 +204,7 @@ export default function AddListItemScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.iconRight}>
+        <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
           <Ionicons name="camera" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -123,6 +217,16 @@ export default function AddListItemScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => {
+          setScannerVisible(false);
+          scanLockRef.current = false; // ← RESET LOCK ON CLOSE
+        }}
+        permissionGranted={!!permission?.granted}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
     </View>
   );
 }
