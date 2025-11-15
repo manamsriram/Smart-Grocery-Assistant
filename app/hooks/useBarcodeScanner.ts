@@ -20,6 +20,13 @@ type UseBarccodeScannerOptions = {
   onError?: (error: Error) => void;
 };
 
+function formatCategoryName(category: string): string {
+  return category
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function useBarcodeScanner(options: UseBarccodeScannerOptions) {
   const { onProductFound, onProductNotFound, onError } = options;
   
@@ -59,9 +66,12 @@ export function useBarcodeScanner(options: UseBarccodeScannerOptions) {
       if (result.status === 1) {
         const product = result.product;
 
+        const rawCategory = product.categories_tags?.[0]?.replace("en:", "") || "other";
+        const formattedCategory = formatCategoryName(rawCategory);
+
         const newItem = {
           name: product.product_name || "Unknown Product",
-          category: product.categories_tags?.[0]?.replace("en:", "") || "Other",
+          category: formattedCategory, 
           quantity: "1",
           unit: "",
           price: "",
