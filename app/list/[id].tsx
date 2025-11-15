@@ -541,8 +541,8 @@ export default function ListDetailScreen() {
                 </TouchableOpacity>
             </View>
         )}
-        {/* Positioned absolutely - always visible. Use an explicit touchable placed inside an absolutely-positioned container
-            so the button sits above overlays and receives touches reliably. Add hitSlop and elevation/zIndex for good measure. */}
+      
+        {/* Add Button */}
         <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]} pointerEvents="box-none">
             <TouchableOpacity
                 style={styles.addButtonTouchable}
