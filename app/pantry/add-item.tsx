@@ -1,11 +1,11 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { firestore } from "../../firebaseConfig";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 
 type Item = {
   id: string;             
@@ -24,142 +24,100 @@ export default function AddPantryItemScreen() {
   const filtered = !item
     ? []
     : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
-  const [scannerVisible, setScannerVisible] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
-  const scanLockRef = React.useRef(false);
   
-// Listen to pantry collection
-useEffect(() => {
-  async function fetchData() {
-    const snapshot = await getDocs(collection(firestore, "items"));
-    setAllItems(
-      snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            name: doc.data().name,
-            category: doc.data().category,
-            quantity: doc.data().quantity || "",
-            unit: doc.data().unit || "",
-            price: doc.data().price || "",
-            expirationDate: doc.data().expirationDate || "",
-          }) as Item
-      )
-    );
-  }
-  fetchData();
-}, []);
+  // Listen to pantry collection
+  useEffect(() => {
+    async function fetchData() {
+      const snapshot = await getDocs(collection(firestore, "items"));
+      setAllItems(
+        snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              name: doc.data().name,
+              category: doc.data().category,
+              quantity: doc.data().quantity || "",
+              unit: doc.data().unit || "",
+              price: doc.data().price || "",
+              expirationDate: doc.data().expirationDate || "",
+            }) as Item
+        )
+      );
+    }
+    fetchData();
+  }, []);
 
   async function addItemToPantry(item: Item) {
-  // Query pantry by name and category
-  const pantryCol = collection(firestore, "pantry");
-  const q = query(
-    pantryCol,
-    where("name", "==", item.name),
-    where("category", "==", item.category)
-  );
-  const querySnapshot = await getDocs(q);
+    const pantryCol = collection(firestore, "pantry");
+    const q = query(
+      pantryCol,
+      where("name", "==", item.name),
+      where("category", "==", item.category)
+    );
+    const querySnapshot = await getDocs(q);
 
-  if (!querySnapshot.empty) {
-    setTimeout(() => {  // ← ADD setTimeout
+    if (!querySnapshot.empty) {
+      setTimeout(() => {
         Alert.alert(
           "Already in pantry",
           `${item.name} is already in your pantry.`,
-          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  
+          [{ text: "OK", onPress: resetLock }]
         );
       }, 500);
-    return;
-  }
+      return;
+    }
 
-  try {
-    const { id, ...pantryItem } = item;
-    await addDoc(pantryCol, pantryItem);
-    setTimeout(() => {  // ← ADD setTimeout
+    try {
+      const { id, ...pantryItem } = item;
+      await addDoc(pantryCol, pantryItem);
+      setTimeout(() => {
         Alert.alert(
           "Success",
           `${item.name} was added to your pantry.`,
-          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← UNLOCK
+          [{ text: "OK", onPress: resetLock }]
         );
-    }, 500);
-  } catch (error) {
-    console.warn("Failed to add item to pantry:", error);
-    setTimeout(() => {  // ← ADD setTimeout
+      }, 500);
+    } catch (error) {
+      console.warn("Failed to add item to pantry:", error);
+      setTimeout(() => {
         Alert.alert(
           "Error",
           "Failed to add item to your pantry. Please try again.",
-          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← UNLOCK
+          [{ text: "OK", onPress: resetLock }]
         );
-    }, 500);
-  }
-}
-
-  // Barcode Scanner Function
-  const openScanner = async () => {
-    scanLockRef.current = false;
-
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        Alert.alert(
-          "Camera Permission Needed",
-          "Please enable camera access to scan barcodes."
-        );
-        return;
-      }
+      }, 500);
     }
+  }
 
-    setScannerVisible(true);
-  };
-
-   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
-    if (scanLockRef.current) return;
-    scanLockRef.current = true;
-
-    setScannerVisible(false);
-
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
-      const result = await response.json();
-
-      if (result.status === 1) {
-        const product = result.product;
-
-        const newItem: Item = {
-          id: Date.now().toString(),
-          name: product.product_name || "Unknown Product",
-          category: product.categories_tags?.[0]?.replace("en:", "") || "Other",
-          quantity: "1",
-          unit: "",
-          price: "",
-          expirationDate: "",
-        };
-
-        await addItemToPantry(newItem);
-        return;
-      }
-
+  // Barcode Scanner
+  const {
+    scannerVisible,
+    permission,
+    openScanner,
+    handleBarCodeScanned,
+    closeScanner,
+    resetLock,
+  } = useBarcodeScanner({
+    onProductFound: async (product) => {
+      const newItem: Item = {
+        id: Date.now().toString(),
+        ...product,
+      };
+      await addItemToPantry(newItem);
+    },
+    onProductNotFound: (barcode) => {
       setTimeout(() => {
         Alert.alert(
           "Not Found",
-          `Barcode: ${data}\nThis item is not in the database. Add manually?`,
+          `Barcode: ${barcode}\nThis item is not in the database. Add manually?`,
           [
-            { text: "Cancel", style: "cancel", onPress: () => { scanLockRef.current = false; } },
-            { text: "Add Manually", onPress: () => { scanLockRef.current = false; } },
+            { text: "Cancel", style: "cancel", onPress: resetLock },
+            { text: "Add Manually", onPress: resetLock },
           ]
         );
       }, 500);
-
-    } catch (error) {
-      console.error("Scan error:", error);
-      setTimeout(() => {
-        Alert.alert(
-          "Error",
-          "Unable to scan barcode. Try again.",
-          [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]
-        );
-      }, 500);
-    }
-  };
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -206,17 +164,13 @@ useEffect(() => {
       {/* Barcode Scanner Modal */}
       <BarcodeScannerModal
         visible={scannerVisible}
-        onClose={() => {
-          setScannerVisible(false);
-          scanLockRef.current = false;
-        }}
+        onClose={closeScanner}
         permissionGranted={!!permission?.granted}
         onBarcodeScanned={handleBarCodeScanned}
       />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -274,4 +228,3 @@ const styles = StyleSheet.create({
     color: "#444",
   },
 });
-

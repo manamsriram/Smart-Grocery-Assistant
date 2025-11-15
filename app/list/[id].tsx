@@ -1,5 +1,4 @@
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
-import { useCameraPermissions } from "expo-camera";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, arrayRemove, collection, doc, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
@@ -9,6 +8,7 @@ import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 
 type Item = {
     id: string;             
@@ -36,9 +36,6 @@ export default function ListDetailScreen() {
     const [editingItem, setEditingItem] = useState<Partial<Item> | null>(null);
     const [editedValues, setEditedValues] = useState<Partial<Item>>({});
     const scrollY = React.useRef(new Animated.Value(0)).current;
-    const [scannerVisible, setScannerVisible] = useState(false);
-    const [permission, requestPermission] = useCameraPermissions()
-    const scanLockRef = React.useRef(false);  // ← CHANGE TO REF
 
     const addButtonOpacity = scrollY.interpolate({
         inputRange: [0, 150],
@@ -244,120 +241,76 @@ export default function ListDetailScreen() {
         return parts.join(" - ");
     }
 
-    // Add the barcode scanner handler
-const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
-    if (scanLockRef.current) return;  // ← Use .current
-    scanLockRef.current = true;       // ← Use .current
+    // Barcode scanner handler
+    const {
+        scannerVisible,
+        permission,
+        openScanner,
+        handleBarCodeScanned,
+        closeScanner,
+        resetLock,
+    } = useBarcodeScanner({
+        onProductFound: async (product) => {
+        const newItem: Item = {
+            id: Date.now().toString(),
+            ...product,
+            completed: false,
+        };
 
-    setScannerVisible(false);
-    
-    try {
-        const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
-        const result = await response.json();
-        
-        if (result.status === 1) {
-            const product = result.product;
-            
-            const newItem: Item = {
-                id: Date.now().toString(),
-                name: product.product_name || "Unknown Product",
-                category: product.categories_tags?.[0]?.replace('en:', '') || "Other",
-                quantity: "1",
-                unit: "",
-                price: "",
-                expirationDate: "",
-                completed: false,
-            };
-            
-            // Check for duplicates BEFORE adding
-            const duplicate = listItems.find(
-                (i) =>
-                    i.name.trim().toLowerCase() === newItem.name.trim().toLowerCase() &&
-                    i.category.trim().toLowerCase() === newItem.category.trim().toLowerCase()
+        // Check for duplicates
+        const duplicate = listItems.find(
+            (i) =>
+            i.name.trim().toLowerCase() === newItem.name.trim().toLowerCase() &&
+            i.category.trim().toLowerCase() === newItem.category.trim().toLowerCase()
+        );
+
+        if (duplicate) {
+            setTimeout(() => {
+            Alert.alert(
+                "Already in list",
+                `${newItem.name} is already in your list.`,
+                [{ text: "OK", onPress: resetLock }]
             );
-
-            if (duplicate) {
-                setTimeout(() => {
-                    Alert.alert(
-                        "Already in list",
-                        `${newItem.name} is already in your list.`,
-                        [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
-                    );
-                }, 500);  // ← Increased to 500ms
-                return;
-            }
-            
-            // Add to list if not duplicate
-            if (!listRef) {
-                scanLockRef.current = false;  // ← Use .current
-                return;
-            }
-            
-            await updateDoc(listRef, {
-                items: [...listItems, newItem],
-            });
-            
-            setTimeout(() => {
-                Alert.alert(
-                    "Added!",
-                    `${newItem.name} has been added to your list.`,
-                    [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
-                );
-            }, 500);  // ← Increased to 500ms
-        } else {
-            setTimeout(() => {
-                Alert.alert(
-                    "Product Not Found",
-                    `Barcode: ${data}\nWould you like to add this item manually?`,
-                    [
-                        { text: "Cancel", style: "cancel", onPress: () => { scanLockRef.current = false; } },  // ← Use .current
-                        {
-                            text: "Add Manually",
-                            onPress: () => {
-                                scanLockRef.current = false;  // ← Use .current
-                                router.push(`/list/${id}/add-list-item`);
-                            },
-                        },
-                    ],
-                );
-            }, 500);  // ← Increased to 500ms
+            }, 500);
+            return;
         }
-    } catch (error) {
-        console.error("Error fetching product:", error);
+
+        if (!listRef) {
+            resetLock();
+            return;
+        }
+
+        await updateDoc(listRef, {
+            items: [...listItems, newItem],
+        });
+
         setTimeout(() => {
             Alert.alert(
-                "Error",
-                "Failed to look up product. Please try again.",
-                [{ text: "OK", onPress: () => { scanLockRef.current = false; } }]  // ← Use .current
+            "Added!",
+            `${newItem.name} has been added to your list.`,
+            [{ text: "OK", onPress: resetLock }]
             );
-        }, 500);  // ← Increased to 500ms
-    }
-};
-
-
-    // Add function to open scanner
-    const openScanner = async () => {
-        scanLockRef.current = false;
-
-        if (!permission) {
-            await requestPermission();
-            return;
-        }
-        
-        if (!permission.granted) {
+        }, 500);
+        },
+        onProductNotFound: (barcode) => {
+        setTimeout(() => {
             Alert.alert(
-                "Camera Permission Required",
-                "Please grant camera permission to scan barcodes.",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Grant Permission", onPress: requestPermission }
-                ]
+            "Product Not Found",
+            `Barcode: ${barcode}\nWould you like to add this item manually?`,
+            [
+                { text: "Cancel", style: "cancel", onPress: resetLock },
+                {
+                text: "Add Manually",
+                onPress: () => {
+                    resetLock();
+                    router.push(`/list/${id}/add-list-item`);
+                },
+                },
+            ]
             );
-            return;
-        }
-        
-        setScannerVisible(true);
-    };
+        }, 500);
+        },
+    });
 
     return (
         <View style={styles.container}>
@@ -604,14 +557,10 @@ const handleBarCodeScanned = async ({ type, data }: { type: string; data: string
         {/* Barcode Scanner Modal */}
        <BarcodeScannerModal
             visible={scannerVisible}
-            onClose={() => {
-                setScannerVisible(false);
-                scanLockRef.current = false;  // ← Use .current
-            }}
+            onClose={closeScanner}
             permissionGranted={!!permission?.granted}
             onBarcodeScanned={handleBarCodeScanned}
         />
-
         </View>
     );
 }
@@ -825,5 +774,5 @@ const styles = StyleSheet.create({
         color: "#888",
         marginTop: 3,
         marginLeft: 2,
-        },    
+    },    
 });
