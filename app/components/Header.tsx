@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   header: {
     zIndex: 10, 
-    paddingTop: 70,
+    paddingTop: 65,
     padding: 20,
     backgroundColor: "#fff",
     flexDirection: "row",

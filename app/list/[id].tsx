@@ -477,14 +477,15 @@ export default function ListDetailScreen() {
                             style={styles.detailsModalContainer}
                         >
                             {/* Header row */}
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 26 }}>{editingItem?.name}</Text>
-                                {/* Replace X button with Done */}
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+                                <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
+                                    {editingItem?.name}
+                                </Text>
+
                                 <TouchableOpacity onPress={handleSaveChanges}>
                                     <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
                                 </TouchableOpacity>
                             </View>
-
                             {/* Grid Inputs */}
                             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                 <View style={{ flex: 1, marginRight: 5 }}>

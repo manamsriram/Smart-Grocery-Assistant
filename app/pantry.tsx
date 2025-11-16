@@ -199,13 +199,15 @@ export default function PantryScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.detailsModalContainer}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems:"center", marginBottom: 15 }}>
-              <Text style={{ fontWeight: "bold", fontSize: 26 }}>{editingItem?.name}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+              <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
+                {editingItem?.name}
+              </Text>
+
               <TouchableOpacity onPress={handleSaveChanges}>
                 <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
               </TouchableOpacity>
             </View>
-
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <View style={{ flex: 1, marginRight: 5 }}>
                 <Text style={styles.label}>Quantity</Text>
