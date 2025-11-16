@@ -16,6 +16,7 @@ type GroceryList = {
   name: string;
   createdAt: Date;  
   userId: string;
+  itemsCount: number; 
 };
 
 export default function ListsScreen() {
@@ -125,6 +126,7 @@ export default function ListsScreen() {
               ? data.createdAt.toDate() // Convert Firestore Timestamp to JavaScript Date
               : new Date(data.createdAt), // Handle case if it's already a JavaScript Date
             userId: data.userId,
+            itemsCount: data.items ? data.items.length : 0,
           };
         })
       );
@@ -158,7 +160,9 @@ export default function ListsScreen() {
                 >
                 <View>
                   <Text style={styles.listName}>{item.name}</Text>
-                  <Text style={styles.listItemCount}>0 item</Text>
+                  <Text style={styles.listItemCount}>
+                    {item.itemsCount} {item.itemsCount === 1 ? "item" : "items"}
+                  </Text>
                 </View>
                  <TouchableOpacity
                   onPress={() => {
