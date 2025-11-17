@@ -3,13 +3,17 @@ import { useRouter } from "expo-router";
 import { EmailAuthProvider, getAuth, reauthenticateWithCredential, signOut, updatePassword, updateProfile } from "firebase/auth";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 import { app } from "../firebaseConfig";
+import { getThemeColors } from "../theme/colors";
 import Header from "./components/Header";
 import InputModal from "./components/InputModal";
 
 export default function AccountScreen() {
   const router = useRouter();
   const auth = getAuth(app);
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
 
   // One modal mode and value for both name/password
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -132,7 +136,7 @@ export default function AccountScreen() {
 
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <Header
             title="Account"
@@ -140,18 +144,18 @@ export default function AccountScreen() {
             showLeftIcon
         />
       {/* Card Options */}
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.cardItem} onPress={openEditNameModal}>
-          <Text style={styles.cardText}>Edit name</Text>
-          <Feather name="chevron-right" size={24} color="#626262" />
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <TouchableOpacity style={[styles.cardItem, { borderBottomColor: colors.border }]} onPress={openEditNameModal}>
+          <Text style={[styles.cardText, { color: colors.text }]}>Edit name</Text>
+          <Feather name="chevron-right" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cardItem} onPress={openEditPasswordModal}>
-          <Text style={styles.cardText}>Change password</Text>
-          <Feather name="chevron-right" size={24} color="#626262" />
+        <TouchableOpacity style={[styles.cardItem, { borderBottomColor: colors.border }]} onPress={openEditPasswordModal}>
+          <Text style={[styles.cardText, { color: colors.text }]}>Change password</Text>
+          <Feather name="chevron-right" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.cardItem} onPress={handleLogout}>
-          <Text style={styles.cardText}>Log out</Text>
-          <Feather name="log-out" size={22} color="#626262" />
+          <Text style={[styles.cardText, { color: colors.text }]}>Log out</Text>
+          <Feather name="log-out" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
       {/* Delete Account */}

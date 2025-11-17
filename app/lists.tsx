@@ -4,7 +4,9 @@ import { getAuth } from "firebase/auth";
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from "firebase/firestore";
 import React, { useState } from "react";
 import { Alert, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 import { app, firestore } from "../firebaseConfig";
+import { getThemeColors } from "../theme/colors";
 import BodySubtitle from "./components/BodySubtitle";
 import BodyTitle from "./components/BodyTitle";
 import Header from "./components/Header";
@@ -21,6 +23,8 @@ type GroceryList = {
 export default function ListsScreen() {
   const auth = getAuth(app);
   const router = useRouter()
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [newListModaVisible, setNewListModaVisible] = useState(false);  
   const [newListName, setNewListName] = useState("");
   const [lists, setLists] = useState<GroceryList[]>([]);
@@ -134,7 +138,7 @@ export default function ListsScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <Header title="My Lists"/>
 
@@ -154,11 +158,11 @@ export default function ListsScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity
                   onPress={() => router.push({ pathname: "/list/[id]", params: { id: item.id } })}
-                  style={styles.listCard}
+                  style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
                 <View>
-                  <Text style={styles.listName}>{item.name}</Text>
-                  <Text style={styles.listItemCount}>0 item</Text>
+                  <Text style={[styles.listName, { color: colors.text }]}>{item.name}</Text>
+                  <Text style={[styles.listItemCount, { color: colors.textSecondary }]}>0 item</Text>
                 </View>
                  <TouchableOpacity
                   onPress={() => {
@@ -166,7 +170,7 @@ export default function ListsScreen() {
                     setOptionsModalVisible(true);
                   }}
                 >
-                  <MaterialIcons name="more-vert" size={24} color="#595959" />
+                  <MaterialIcons name="more-vert" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </TouchableOpacity>
             )}
@@ -175,11 +179,11 @@ export default function ListsScreen() {
         )}
 
         <TouchableOpacity
-          style={styles.newListButton}
+          style={[styles.newListButton, { backgroundColor: colors.primary }]}
           onPress={() => setNewListModaVisible(true)}
         >
-          <Ionicons name="add" size={30} color="#fff" />
-          <Text style={styles.newListText}>New List</Text>
+          <Ionicons name="add" size={30} color={colors.background} />
+          <Text style={[styles.newListText, { color: colors.background }]}>New List</Text>
         </TouchableOpacity>
       </View>
 
@@ -201,7 +205,7 @@ export default function ListsScreen() {
         visible={optionsModalVisible}
         onRequestClose={() => setOptionsModalVisible(false)}
       >
-        <View style={styles.optionsModalOverlay}>
+        <View style={[styles.optionsModalOverlay, { backgroundColor: colors.overlay }]}>
           {/* Background tap area */}
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
@@ -210,29 +214,29 @@ export default function ListsScreen() {
           />
 
           {/* Modal content */}
-          <View style={styles.optionsModalContainer}>
+          <View style={[styles.optionsModalContainer, { backgroundColor: colors.card }]}>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setOptionsModalVisible(false)}
             >
-              <Ionicons name="close" size={28} color="#979797" />
+              <Ionicons name="close" size={28} color={colors.textSecondary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.OptionButton} onPress={openRenameModal}>
+            <TouchableOpacity style={[styles.OptionButton, { borderBottomColor: colors.border }]} onPress={openRenameModal}>
               <View style={styles.optionRow}>
-                <MaterialIcons name="edit" size={22} color="#222" />
-                <Text style={styles.optionText}>Rename</Text>
+                <MaterialIcons name="edit" size={22} color={colors.text} />
+                <Text style={[styles.optionText, { color: colors.text }]}>Rename</Text>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.OptionButton} onPress={handleDuplicate}>
+            <TouchableOpacity style={[styles.OptionButton, { borderBottomColor: colors.border }]} onPress={handleDuplicate}>
               <View style={styles.optionRow}>
-                <MaterialCommunityIcons name="content-copy" size={22} color="#222" />
-                <Text style={styles.optionText}>Duplicate</Text>
+                <MaterialCommunityIcons name="content-copy" size={22} color={colors.text} />
+                <Text style={[styles.optionText, { color: colors.text }]}>Duplicate</Text>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.OptionButton} onPress={handleDelete}>
+            <TouchableOpacity style={[styles.OptionButton, { borderBottomColor: colors.border }]} onPress={handleDelete}>
               <View style={styles.optionRow}>
                 <MaterialIcons name="delete" size={22} color="#dc3545" />
                 <Text style={[styles.optionText, { color: "#dc3545" }]}>Delete</Text>

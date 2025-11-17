@@ -1,29 +1,31 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { getThemeColors } from "../theme/colors";
 
 export default function GetStartedScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>PantryPal</Text>
-      <Text style={styles.subtitle}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Image
+        source={require("../assets/welcomePage-bg-pic.png")}
+        style={styles.logo}
+      />
+
+      <Text style={[styles.title, { color: colors.text }]}>PantryPal</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Track groceries, control budget, get meal suggestions
       </Text>
 
       <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={() => router.push("/(auth)/signup")}
-      >
-        <Text style={styles.buttonText}>Create Account</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
+        style={[styles.primaryButton, { backgroundColor: colors.primary }]}
         onPress={() => router.push("/(auth)/login")}
       >
-        <Text style={styles.secondaryButtonText}>Log In</Text>
+        <Text style={[styles.buttonText, { color: colors.background }]}>Get Started</Text>
       </TouchableOpacity>
     </View>
   );
@@ -34,18 +36,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
     padding: 20,
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    resizeMode: "contain",
+    marginBottom: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#333",
+    color: "#fff",
   },
   subtitle: {
     fontSize: 18,
-    color: "#666",
+    color: "#fff",
     textAlign: "center",
     marginBottom: 40,
   },

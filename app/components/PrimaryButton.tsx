@@ -1,6 +1,8 @@
 import { Entypo } from '@expo/vector-icons';
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 interface PrimaryButtonProps {
   text: string;
@@ -22,7 +24,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   ) : null;
 
   return (
-    <TouchableOpacity style={[styles.button, typeof width === "number" ? { width } : { width: width }]} onPress={onPress}>
+  <TouchableOpacity style={[styles.button, typeof width === "number" ? { width } : { width: width }, { backgroundColor: getThemeColors(useTheme().isDark).primary }]} onPress={onPress}>
         <View
             style={[
             styles.buttonContent,

@@ -1,5 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TextStyle } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 type BodyTitleProps = {
   children: string;
@@ -7,14 +9,15 @@ type BodyTitleProps = {
 };
 
 const BodyTitle = ({ children, style }: BodyTitleProps) => {
-  return <Text style={[styles.bodyTitle, style]}>{children}</Text>;
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
+  return <Text style={[styles.bodyTitle, { color: colors.text }, style]}>{children}</Text>;
 };
 
 const styles = StyleSheet.create({
   bodyTitle: {
     fontSize: 20,
     fontWeight: "500",
-    color: "#202020",
     marginBottom: 8,
   },
 });

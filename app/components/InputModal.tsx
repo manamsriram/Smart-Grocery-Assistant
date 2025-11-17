@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 type InputModalProps = {
   visible: boolean;
@@ -32,31 +34,34 @@ const InputModal: React.FC<InputModalProps> = ({
   onClose,
   secureTextEntry,
 }) => {
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
+
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <KeyboardAvoidingView
         enabled
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.modalWrapper}
+        style={[styles.modalWrapper, { backgroundColor: colors.overlay }]}
       >
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <Ionicons name="close" size={32} color="#979797" />
+            <Ionicons name="close" size={32} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <Text style={styles.modalTitle}>{title}</Text>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
 
           <TextInput
-            style={styles.modalInput}
+            style={[styles.modalInput, { backgroundColor: colors.surface, color: colors.text }]}
             placeholder={placeholder}
             value={value}
             onChangeText={onChangeText}
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textSecondary}
             secureTextEntry={secureTextEntry ?? false}
           />
 
           <TouchableOpacity
-            style={[styles.modalSaveButton, { opacity: value.trim() ? 1 : 0.6 }]}
+            style={[styles.modalSaveButton, { backgroundColor: colors.primary, opacity: value.trim() ? 1 : 0.6 }]}
             onPress={onSave}
             disabled={!value.trim()}
           >
