@@ -5,12 +5,12 @@ import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { firestore } from "../../firebaseConfig";
-import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import { getThemeColors } from "../../theme/colors";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
-import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 
 type Item = {
     id: string;             

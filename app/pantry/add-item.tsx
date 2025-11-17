@@ -5,9 +5,9 @@ import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { firestore } from "../../firebaseConfig";
-import BarcodeScannerModal from "../components/BarcodeScannerModal";
-import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
+import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import { getThemeColors } from "../../theme/colors";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
 type Item = {
   id: string;             
