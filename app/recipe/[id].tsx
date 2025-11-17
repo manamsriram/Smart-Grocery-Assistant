@@ -10,10 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 export default function RecipeDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [meal, setMeal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,16 +56,16 @@ export default function RecipeDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#22c55e" />
+      <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!meal) {
     return (
-      <View style={styles.loaderContainer}>
-        <Text style={{ color: "#777" }}>Meal not found.</Text>
+      <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+        <Text style={[{ color: colors.textSecondary }]}>Meal not found.</Text>
       </View>
     );
   }
@@ -77,13 +81,13 @@ export default function RecipeDetailsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={26} color="#222" />
+          <Ionicons name="arrow-back" size={26} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
           {meal.strMeal}
         </Text>
         <View style={{ width: 26 }} />
@@ -93,18 +97,18 @@ export default function RecipeDetailsScreen() {
       <Image source={{ uri: meal.strMealThumb }} style={styles.mealImage} />
 
       {/* Info Card */}
-      <View style={styles.contentCard}>
-        <Text style={styles.sectionTitle}>Ingredients</Text>
+      <View style={[styles.contentCard, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Ingredients</Text>
         {ingredients.map((item, idx) => (
-          <Text key={idx} style={styles.ingredientText}>
+          <Text key={idx} style={[styles.ingredientText, { color: colors.text }]}>
             • {item.ingredient} — {item.measure}
           </Text>
         ))}
 
-        <Text style={[styles.sectionTitle, { marginTop: 18 }]}>
+        <Text style={[styles.sectionTitle, { marginTop: 18, color: colors.text }]}>
           Instructions
         </Text>
-        <Text style={styles.instructions}>{meal.strInstructions}</Text>
+        <Text style={[styles.instructions, { color: colors.text }]}>{meal.strInstructions}</Text>
       </View>
 
       <View style={{ height: 40 }} />

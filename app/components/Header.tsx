@@ -2,6 +2,8 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from '@react-navigation/native';
 import React, { ReactNode } from "react";
 import { StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 interface HeaderProps {
   title: ReactNode;
@@ -29,9 +31,11 @@ const Header: React.FC<HeaderProps> = ({
   titleStyle,
 }) => {
   const navigation = useNavigation();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
 
   return (
-    <View style={[styles.header, style]}>
+    <View style={[styles.header, { backgroundColor: colors.card }, style]}>
       {/* Left Icon */}
       <View style={styles.iconContainer}>
         {showLeftIcon && (
@@ -39,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({
             onPress={onLeftPress || navigation.goBack}
             style={styles.iconButton}
           >
-            <Ionicons name={leftIconName} size={28} color="#161616" />
+            <Ionicons name={leftIconName} size={28} color={colors.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -54,6 +58,7 @@ const Header: React.FC<HeaderProps> = ({
         <Text
           style={[
             styles.headerTitle,
+            { color: colors.text },
             titleAlign === "center" && styles.centerTitle,
             titleStyle,
           ]}
@@ -67,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({
       <View style={styles.iconContainer}>
         {showRightIcon && (
           <TouchableOpacity onPress={onRightPress} style={styles.iconButton}>
-            <MaterialIcons name={rightIconName} size={28} color="#161616" />
+            <MaterialIcons name={rightIconName} size={28} color={colors.text} />
           </TouchableOpacity>
         )}
       </View>

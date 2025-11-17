@@ -12,7 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 import { firestore } from "../firebaseConfig";
+import { getThemeColors } from "../theme/colors";
 import TabBar from "./components/TabBar";
 
 const filters = [
@@ -32,6 +34,8 @@ const quickCategories = new Set(["Breakfast", "Snack", "Side"]);
 
 export default function RecipesScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [pantryItems, setPantryItems] = useState<{ name: string; expirationDate: string | null }[]>([]);
@@ -244,18 +248,18 @@ export default function RecipesScreen() {
     : filteredRecipes;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header and Search */}
       <View style={styles.headerRow}>
-        <Text style={styles.headerTitle}>Recipes</Text>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#aaa" />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Recipes</Text>
+        <View style={[styles.searchBox, { backgroundColor: colors.card }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             placeholder="Search recipes"
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             value={search}
             onChangeText={setSearch}
-            placeholderTextColor="#aaa"
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
       </View>
@@ -267,14 +271,16 @@ export default function RecipesScreen() {
             key={f.key}
             style={[
               styles.filterButton,
-              activeFilter === f.key && styles.filterButtonActive,
+              activeFilter === f.key && { ...styles.filterButtonActive, backgroundColor: colors.primary },
+              activeFilter !== f.key && { backgroundColor: colors.surface, borderColor: colors.border }
             ]}
             onPress={() => setActiveFilter(f.key)}
           >
             <Text
               style={[
                 styles.filterText,
-                activeFilter === f.key && styles.filterTextActive,
+                activeFilter === f.key && { ...styles.filterTextActive, color: colors.background },
+                activeFilter !== f.key && { color: colors.text }
               ]}
             >
               {f.label}
@@ -285,19 +291,19 @@ export default function RecipesScreen() {
 
       {loading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color="#22c55e" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 80 }}>
           {searchedRecipes.length === 0 && (
-            <Text style={{ alignSelf: "center", marginTop: 40, color: "#888" }}>
+            <Text style={[{ alignSelf: "center", marginTop: 40, color: colors.textSecondary }]}>
               No recipes found
             </Text>
           )}
           {searchedRecipes.map(recipe => (
             <TouchableOpacity
               key={recipe.idMeal}
-              style={styles.recipeCard} 
+              style={[styles.recipeCard, { backgroundColor: colors.card }]} 
               onPress={() => router.push(`/recipe/${recipe.idMeal}`)}
             >
               <View style={styles.imageWrapper}>
@@ -307,9 +313,9 @@ export default function RecipesScreen() {
                   resizeMode="cover"
                 />
               </View>
-              <Text style={styles.recipeTitle}>{recipe.strMeal}</Text>
+              <Text style={[styles.recipeTitle, { color: colors.text }]}>{recipe.strMeal}</Text>
               <View style={styles.recipeSubInfo}>
-                <Text style={styles.recipeSubText}>Ingredient match</Text>
+                <Text style={[styles.recipeSubText, { color: colors.textSecondary }]}>Ingredient match</Text>
               </View>
             </TouchableOpacity>
           ))}

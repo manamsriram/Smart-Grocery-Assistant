@@ -4,7 +4,9 @@ import { useRouter } from "expo-router";
 import { collection, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 import { firestore } from "../firebaseConfig";
+import { getThemeColors } from "../theme/colors";
 import BodySubtitle from "./components/BodySubtitle";
 import BodyTitle from "./components/BodyTitle";
 import Header from "./components/Header";
@@ -22,6 +24,8 @@ type Item = {
 
 export default function PantryScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [pantryItems, setPantryItems] = useState<Item[]>([]);
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const addButtonOpacity = scrollY.interpolate({
@@ -136,7 +140,7 @@ export default function PantryScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title="My Pantry" titleAlign="left" />
       {hasItems ? (
         <Animated.ScrollView
@@ -149,20 +153,20 @@ export default function PantryScreen() {
         >
           {Object.entries(groupedPantryItems).map(([category, items]) => (
             <Fragment key={category}>
-              <View style={styles.categoryHeader}>
-                <Text style={styles.categoryText}>{category}</Text>
+              <View style={[styles.categoryHeader, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.categoryText, { color: colors.background }]}>{category}</Text>
               </View>
 
               {items.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.itemRow}
+                  style={[styles.itemRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
                   onPress={() => onItemPress(item)}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemText}>{item.name}</Text>
+                    <Text style={[styles.itemText, { color: colors.text }]}>{item.name}</Text>
                     {getItemDetailLine(item) !== "" && (
-                      <Text style={styles.itemDetailText}>{getItemDetailLine(item)}</Text>
+                      <Text style={[styles.itemDetailText, { color: colors.textSecondary }]}>{getItemDetailLine(item)}</Text>
                     )}
                   </View>
                   <TouchableOpacity
@@ -190,14 +194,14 @@ export default function PantryScreen() {
         transparent
         onRequestClose={() => setDetailsModalVisible(false)}
       >
-        <View style={styles.detailsModalOverlay}>
+        <View style={[styles.detailsModalOverlay, { backgroundColor: colors.overlay }]}>
           <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
             <View style={styles.background} />
           </TouchableWithoutFeedback>
 
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.detailsModalContainer}
+            style={[styles.detailsModalContainer, { backgroundColor: colors.card }]}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
               <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
@@ -205,38 +209,41 @@ export default function PantryScreen() {
               </Text>
 
               <TouchableOpacity onPress={handleSaveChanges}>
-                <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
+                <Text style={[{ fontSize: 18, color: colors.primary, fontWeight: "600" }]}>Done</Text>
               </TouchableOpacity>
             </View>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <View style={{ flex: 1, marginRight: 5 }}>
-                <Text style={styles.label}>Quantity</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
                 <TextInput
-                  style={styles.inputBoxText}
+                  style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                   value={editedValues.quantity ?? ""}
                   onChangeText={(v) => handleInputChange("quantity",  v.replace(/[^0-9.]/g, ""))}
                   placeholder="1"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="numeric"
                 />
-                <Text style={styles.label}>Price</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Price</Text>
                 <TextInput
-                  style={styles.inputBoxText}
+                  style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                   value={editedValues.price ?? ""}
                   onChangeText={(v) => handleInputChange("price", v.replace(/[^0-9.]/g, ""))}
                   placeholder="0"
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="numeric"
                 />
               </View>
               <View style={{ flex:1, marginLeft: 5 }}>
-                <Text style={styles.label}>Unit</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Unit</Text>
                 <TextInput
-                  style={styles.inputBoxText}
+                  style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                   value={editedValues.unit ?? ""}
                   onChangeText={(v) => handleInputChange("unit", v)}
                   placeholder="Unit"
+                  placeholderTextColor={colors.textSecondary}
                 />
 
-              <Text style={styles.label}>Expiration Date</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Expiration Date</Text>
               <TouchableOpacity
                 onPress={() => {
                   if (editedValues.expirationDate) {
@@ -269,15 +276,15 @@ export default function PantryScreen() {
             animationType="slide"
             onRequestClose={() => setShowDatePickerModal(false)}
           >
-            <View style={styles.datePickerOverlay}>
+            <View style={[styles.datePickerOverlay, { backgroundColor: colors.overlay }]}>
               <TouchableWithoutFeedback onPress={() => setShowDatePickerModal(false)}>
                 <View style={styles.background} />
               </TouchableWithoutFeedback>
 
-              <View style={styles.datePickerContainer}>
+              <View style={[styles.datePickerContainer, { backgroundColor: colors.card }]}>
                 <View style={styles.datePickerHeader}>
                   <TouchableOpacity onPress={() => setShowDatePickerModal(false)}>
-                    <Text style={{ fontSize: 18, color: "#dc3545", fontWeight: "500" }}>Cancel</Text>
+                    <Text style={[{ fontSize: 18, color: "#dc3545", fontWeight: "500" }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
@@ -288,7 +295,7 @@ export default function PantryScreen() {
                       setShowDatePickerModal(false);
                     }}
                   >
-                    <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
+                    <Text style={[{ fontSize: 18, color: colors.primary, fontWeight: "600" }]}>Done</Text>
                   </TouchableOpacity>
                 </View>
 

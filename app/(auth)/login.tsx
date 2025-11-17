@@ -9,13 +9,17 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { app } from "../../firebaseConfig";
+import { getThemeColors } from "../../theme/colors";
 import AuthHeader from "../components/AuthHeader";
 import PrimaryButton from "../components/PrimaryButton";
 
 export default function LoginScreen() {
   const auth = getAuth(app);
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,7 +73,7 @@ export default function LoginScreen() {
   };
 
   return (      
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
 
       {/* Header */}
       <AuthHeader
@@ -79,36 +83,42 @@ export default function LoginScreen() {
 
       {/* Login Form */}
       <View style={styles.form}>
-        <Text style={styles.loginTitle}>Log In</Text>
+        <Text style={[styles.loginTitle, { color: colors.text }]}>Log In</Text>
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={[
-            styles.input,
-            errorFields.email && styles.inputError
-          ]}
-          placeholder="Enter your email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-          placeholderTextColor="#A3A3A3"
-        />
-
-        <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
         <View
           style={[
             styles.passwordContainer,
-            errorFields.password && styles.inputError
+            errorFields.email && styles.inputError,
+            { backgroundColor: colors.surface, borderColor: colors.border }
           ]}
         >
           <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            style={[styles.input, { color: colors.text }]}
+            placeholder="Enter your email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            placeholderTextColor={colors.textSecondary}
+          />
+        </View>
+
+        <Text style={[styles.label, { marginTop: 16, color: colors.text }]}>Password</Text>
+        <View
+          style={[
+            styles.passwordContainer,
+            errorFields.password && styles.inputError,
+            { backgroundColor: colors.surface, borderColor: colors.border }
+          ]}
+        >
+          <TextInput
+            style={[styles.input, { color: colors.text }]}
             placeholder="Enter your password"
             secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
-            placeholderTextColor="#A3A3A3"
+            placeholderTextColor={colors.textSecondary}
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
@@ -117,13 +127,13 @@ export default function LoginScreen() {
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={22}
-              color="#606060"
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
         
         {/* Error Message */}
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error && <Text style={[styles.errorText, { color: "#dc3545" }]}>{error}</Text>}
 
         <PrimaryButton
           text="Log in"              
@@ -133,9 +143,9 @@ export default function LoginScreen() {
 
         {/* Sign Up Link */}  
         <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Don’t have an account? </Text>
+          <Text style={[styles.signUpText, { color: colors.text }]}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-            <Text style={styles.signUpLink}>Sign Up</Text>
+            <Text style={[styles.signUpLink, { color: colors.primary }]}>Sign Up</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -166,13 +176,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    backgroundColor: "#f1f1f1",
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    flex: 1,
     fontSize: 16,
     color: "#222",
-    marginBottom: 20,
     borderWidth: 1,
     borderColor: "transparent", 
   },
@@ -182,17 +188,20 @@ const styles = StyleSheet.create({
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f1f1f1",
+    justifyContent: "flex-start",
     borderRadius: 10,
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     marginBottom: 40,
     borderWidth: 1,
     borderColor: "transparent",
+    minHeight: 44,
   },
   eyeIcon: {
     position: "absolute",
     right: 16,
-    top: 12,
+    top: "50%",
+    marginTop: -11,
   },
   errorText: {
     color: "#E53935",

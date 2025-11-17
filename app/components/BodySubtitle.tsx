@@ -1,5 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TextStyle } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { getThemeColors } from "../../theme/colors";
 
 type BodySubtitleProps = {
   children: string;
@@ -7,12 +9,13 @@ type BodySubtitleProps = {
 };
 
 const BodySubtitle = ({ children, style }: BodySubtitleProps) => {
-  return <Text style={[styles.bodySubtitle, style]}>{children}</Text>;
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
+  return <Text style={[styles.bodySubtitle, { color: colors.textSecondary }, style]}>{children}</Text>;
 };
 
 const styles = StyleSheet.create({
   bodySubtitle: {
-    color: "#969696",
     fontSize: 17,
     marginBottom: 50,
   },

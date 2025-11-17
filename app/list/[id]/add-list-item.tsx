@@ -5,7 +5,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayUnion, collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../../context/ThemeContext";
 import { firestore } from "../../../firebaseConfig";
+import { getThemeColors } from "../../../theme/colors";
 
 type Item = {
   id: string;
@@ -28,6 +30,8 @@ interface ItemDoc {
 
 export default function AddListItemScreen() {
   const router = useRouter();
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
   const [item, setItem] = useState<string>("");
   const [allItems, setAllItems] = useState<Item[]>([]);
   const { id: listId } = useLocalSearchParams<{ id: string }>();
@@ -138,26 +142,26 @@ export default function AddListItemScreen() {
     }  
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header Bar */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.primary }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.iconLeft}>
-          <Ionicons name="arrow-back" size={26} color="#fff" />
+          <Ionicons name="arrow-back" size={26} color={colors.background} />
         </TouchableOpacity>
 
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={19} color="#aaa" />
+        <View style={[styles.searchBox, { backgroundColor: colors.card }]}>
+          <Ionicons name="search" size={19} color={colors.textSecondary} />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="Add new item"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={colors.textSecondary}
             value={item}
             onChangeText={setItem}
             returnKeyType="done"
           />
           {!!item && (
             <TouchableOpacity onPress={() => setItem("")} style={styles.clearButton}>
-              <MaterialIcons name="close" size={19} color="#aaa" />
+              <MaterialIcons name="close" size={19} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -170,8 +174,8 @@ export default function AddListItemScreen() {
       {/* Main Content Area */}
       <View style={styles.mainContent}>
         {filtered.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.resultRow} onPress={() => addItemToCurrentList(item)}>
-            <Text style={styles.resultText}>{item.name}</Text>
+          <TouchableOpacity key={item.id} style={[styles.resultRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]} onPress={() => addItemToCurrentList(item)}>
+            <Text style={[styles.resultText, { color: colors.text }]}>{item.name}</Text>
           </TouchableOpacity>
         ))}
       </View>

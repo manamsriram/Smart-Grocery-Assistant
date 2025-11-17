@@ -3,8 +3,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, arrayRemove, collection, doc, getDocs, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { firestore } from "../../firebaseConfig";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { getThemeColors } from "../../theme/colors";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
@@ -23,6 +25,8 @@ type Item = {
 
 export default function ListDetailScreen() {
     const router = useRouter();
+    const { isDark } = useTheme();
+    const colors = getThemeColors(isDark);
     const { id } = useLocalSearchParams<{ id: string }>();
     const [optionsModalVisible, setOptionsModalVisible] = useState(false);
     const [listItems, setListItems] = useState<Item[]>([]);
@@ -313,7 +317,7 @@ export default function ListDetailScreen() {
     });
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header */}
             <Header
                 title={listName || "Loading..."}
@@ -330,27 +334,27 @@ export default function ListDetailScreen() {
                 visible={optionsModalVisible}
                 onRequestClose={() => setOptionsModalVisible(false)}
                 >
-                <View style={styles.overlay}>
+                <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
                     {/* overlay close tap */}
                     <TouchableOpacity style={styles.background} onPress={() => setOptionsModalVisible(false)} />   
 
-                    <View style={styles.modalContainer}>
+                    <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
                         <TouchableOpacity style={styles.modalCloseButton} onPress={()=> setOptionsModalVisible(false)}>
-                            <Ionicons name="close" size={32} color="#979797" />
+                            <Ionicons name="close" size={32} color={colors.textSecondary} />
                         </TouchableOpacity>
 
                         {/* Options */}
                         <TouchableOpacity style={styles.option} onPress={handleUncheckAll}>
-                            <MaterialIcons name="refresh" size={24} color="#8D8D90" />
-                            <Text style={styles.optionText}>Uncheck all items</Text>
+                            <MaterialIcons name="refresh" size={24} color={colors.textSecondary} />
+                            <Text style={[styles.optionText, { color: colors.text }]}>Uncheck all items</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.option} onPress={handleCheckAll}>
-                            <MaterialIcons name="done-all" size={24} color="#8D8D90" />
-                            <Text style={styles.optionText}>Check off all items</Text>
+                            <MaterialIcons name="done-all" size={24} color={colors.textSecondary} />
+                            <Text style={[styles.optionText, { color: colors.text }]}>Check off all items</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.option} onPress={handleMoveCheckedToPantry}>
-                            <MaterialCommunityIcons name="cart-arrow-right" size={24} color="#8D8D90" />
-                            <Text style={styles.optionText}>Move checked items to pantry</Text>
+                            <MaterialCommunityIcons name="cart-arrow-right" size={24} color={colors.textSecondary} />
+                            <Text style={[styles.optionText, { color: colors.text }]}>Move checked items to pantry</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.option} onPress={handleDeleteAll}>
                             <MaterialIcons name="delete-outline" size={24} color="#dc3545" />
@@ -371,17 +375,17 @@ export default function ListDetailScreen() {
                 scrollEventThrottle={16}
             >
             {/* Tabs */}
-            <View style={styles.tabHeader}>
+            <View style={[styles.tabHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => setActiveTab("active")}>
-                    <Text style={activeTab === "active" ? styles.tabActive : styles.tabInactive}>Your list</Text>
-                    <Text style={activeTab === "active" ? styles.tabCountActive : styles.tabCountInactive}>
+                    <Text style={[activeTab === "active" ? { ...styles.tabActive, color: colors.primary } : { ...styles.tabInactive, color: colors.textSecondary }]}>Your list</Text>
+                    <Text style={[activeTab === "active" ? { ...styles.tabCountActive, color: colors.primary } : { ...styles.tabCountInactive, color: colors.textSecondary }]}>
                         {activeItems.length} Items
                     </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => setActiveTab("completed")}>
-                    <Text style={activeTab === "completed" ? styles.tabActive : styles.tabInactive}>Completed Items</Text>
-                    <Text style={activeTab === "completed" ? styles.tabCountActive : styles.tabCountInactive}>
+                    <Text style={[activeTab === "completed" ? { ...styles.tabActive, color: colors.primary } : { ...styles.tabInactive, color: colors.textSecondary }]}>Completed Items</Text>
+                    <Text style={[activeTab === "completed" ? { ...styles.tabCountActive, color: colors.primary } : { ...styles.tabCountInactive, color: colors.textSecondary }]}>
                         {completedItems.length} Items
                     </Text>
                 </TouchableOpacity>
@@ -391,13 +395,13 @@ export default function ListDetailScreen() {
             {activeTab === "active" &&
                 Object.entries(groupedActiveItems).map(([category, items]) => (
                 <Fragment key={category}>
-                    <View style={styles.categoryHeader}>
-                        <Text style={styles.categoryText}>{category}</Text>
+                    <View style={[styles.categoryHeader, { backgroundColor: colors.primary }]}>
+                        <Text style={[styles.categoryText, { color: colors.background }]}>{category}</Text>
                     </View>
                     {items.map((item) => (
                     <TouchableOpacity
                         key={item.id}
-                        style={styles.itemRow}
+                        style={[styles.itemRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
                         onPress={() => {
                             setEditingItem(item);
                             setEditedValues({ 
@@ -409,14 +413,14 @@ export default function ListDetailScreen() {
                             setDetailsModalVisible(true);
                         }}
                     >
-                        <TouchableOpacity style={[styles.circle, item.completed && styles.checkedCircle]} onPress={() => toggleItemCompletion(item)}>
-                            {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        <TouchableOpacity style={[styles.circle, item.completed && { ...styles.checkedCircle, backgroundColor: colors.primary }]} onPress={() => toggleItemCompletion(item)}>
+                            {item.completed && <MaterialIcons name="check" size={16} color={colors.background} />}
                         </TouchableOpacity>                
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.itemText}>{item.name}</Text>
+                            <Text style={[styles.itemText, { color: colors.text }]}>{item.name}</Text>
                             {/* Detail line in gray, below name */}
                             {getItemDetailLine(item) !== "" && (
-                                <Text style={styles.itemDetailText}>{getItemDetailLine(item)}</Text>
+                                <Text style={[styles.itemDetailText, { color: colors.textSecondary }]}>{getItemDetailLine(item)}</Text>
                             )}
                         </View>
 
@@ -431,20 +435,20 @@ export default function ListDetailScreen() {
             {activeTab === "completed" &&
                 Object.entries(groupedCompletedItems).map(([category, items]) => (
                 <Fragment key={category}>
-                    <View style={styles.categoryHeader}>
-                    <Text style={styles.categoryText}>{category}</Text>
+                    <View style={[styles.categoryHeader, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.categoryText, { color: colors.background }]}>{category}</Text>
                     </View>
                     {items.map((item) => (
                     <TouchableOpacity
                         key={item.id}
-                        style={styles.itemRow}
+                        style={[styles.itemRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}
                         onPress={() => toggleItemCompletion(item)}
                     >
-                        <View style={[styles.circle, item.completed && styles.checkedCircle]}>
-                            {item.completed && <MaterialIcons name="check" size={16} color="#fff" />}
+                        <View style={[styles.circle, item.completed && { ...styles.checkedCircle, backgroundColor: colors.primary }]}>
+                            {item.completed && <MaterialIcons name="check" size={16} color={colors.background} />}
                         </View>                       
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: '#888' }]}>
+                            <Text style={[styles.itemText, { textDecorationLine: 'line-through', color: colors.textSecondary }]}>
                                 {item.name}
                             </Text>
                             {/* Detail line in gray, below name */}
@@ -466,7 +470,7 @@ export default function ListDetailScreen() {
                     transparent
                     onRequestClose={() => setDetailsModalVisible(false)}
                 >
-                    <View style={styles.detailsModalOverlay}>
+                    <View style={[styles.detailsModalOverlay, { backgroundColor: colors.overlay }]}>
                         {/* TouchableWithoutFeedback to dismiss keyboard */}
                         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
                             <View style={styles.background} />
@@ -474,7 +478,7 @@ export default function ListDetailScreen() {
 
                         <KeyboardAvoidingView
                             behavior={Platform.OS === 'ios' ? 'padding' : undefined} // For iOS, use 'padding' behavior
-                            style={styles.detailsModalContainer}
+                            style={[styles.detailsModalContainer, { backgroundColor: colors.card }]}
                         >
                             {/* Header row */}
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
@@ -483,43 +487,47 @@ export default function ListDetailScreen() {
                                 </Text>
 
                                 <TouchableOpacity onPress={handleSaveChanges}>
-                                    <Text style={{ fontSize: 18, color: "#36AF27", fontWeight: "600" }}>Done</Text>
+                                    <Text style={[{ fontSize: 18, color: colors.primary, fontWeight: "600" }]}>Done</Text>
                                 </TouchableOpacity>
                             </View>
                             {/* Grid Inputs */}
                             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                 <View style={{ flex: 1, marginRight: 5 }}>
-                                    <Text style={styles.label}>Quantity</Text>
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
                                     <TextInput
-                                        style={styles.inputBoxText}
+                                        style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                                         value={editedValues.quantity ?? ""}
                                         onChangeText={(value) => handleInputChange("quantity", value)}
                                         placeholder="1"
+                                        placeholderTextColor={colors.textSecondary}
                                         keyboardType="numeric"
                                     />
-                                    <Text style={styles.label}>Price</Text>                                  
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>Price</Text>                                  
                                     <TextInput
-                                        style={styles.inputBoxText}
+                                        style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                                         value={editedValues.price ? `$${editedValues.price}` : ""}
                                         onChangeText={(value) => handleInputChange("price", value.replace(/[^0-9.]/g, ''))}  // Strip non-numeric characters except for the dot
                                         placeholder="0"
+                                        placeholderTextColor={colors.textSecondary}
                                         keyboardType="numeric"
                                     />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 5 }}>
-                                    <Text style={styles.label}>Unit</Text>
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>Unit</Text>
                                     <TextInput
-                                        style={styles.inputBoxText}
+                                        style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                                         value={editedValues.unit ?? ""}
                                         onChangeText={(value) => handleInputChange("unit", value)}
-                                        placeholder="Unit" 
+                                        placeholder="Unit"
+                                        placeholderTextColor={colors.textSecondary}
                                     />
-                                    <Text style={styles.label}>Expiration date</Text>
+                                    <Text style={[styles.label, { color: colors.textSecondary }]}>Expiration date</Text>
                                     <TextInput
-                                        style={styles.inputBoxText}
+                                        style={[styles.inputBoxText, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                                         value={editedValues.expirationDate ?? ""}
                                         onChangeText={(value) => handleInputChange("expirationDate", value)}
-                                        placeholder="MM/DD/YYYY" 
+                                        placeholder="MM/DD/YYYY"
+                                        placeholderTextColor={colors.textSecondary}
                                     />
                                 </View>
                             </View>
@@ -529,9 +537,9 @@ export default function ListDetailScreen() {
 
             </Animated.ScrollView>
         ) : (
-            <View style={styles.centeredContent}>
+            <View style={[styles.centeredContent, { backgroundColor: colors.background }]}>
                 <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
-                <BodyTitle>Let’s plan your shopping</BodyTitle>
+                <BodyTitle>Let's plan your shopping</BodyTitle>
                 <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
                 <TouchableOpacity 
                     style={styles.scanBarcodesButton}
@@ -551,7 +559,7 @@ export default function ListDetailScreen() {
                 activeOpacity={0.85}
                 hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
             >
-                <Text style={styles.addButtonText}>+ Add</Text>
+                <Text style={[styles.addButtonText, { color: colors.background }]}>+ Add</Text>
             </TouchableOpacity>
         </Animated.View>
 
