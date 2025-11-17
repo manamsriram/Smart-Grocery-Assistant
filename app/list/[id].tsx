@@ -5,11 +5,12 @@ import React, { Fragment, useEffect, useState } from "react";
 import { Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { firestore } from "../../firebaseConfig";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import { getThemeColors } from "../../theme/colors";
 import BodySubtitle from "../components/BodySubtitle";
 import BodyTitle from "../components/BodyTitle";
 import Header from "../components/Header";
-
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 
 type Item = {
     id: string;             
@@ -37,10 +38,9 @@ export default function ListDetailScreen() {
     const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState<Partial<Item> | null>(null);
-
     const [editedValues, setEditedValues] = useState<Partial<Item>>({});
-
     const scrollY = React.useRef(new Animated.Value(0)).current;
+
     const addButtonOpacity = scrollY.interpolate({
         inputRange: [0, 150],
         outputRange: [1, 0.3],
@@ -245,6 +245,77 @@ export default function ListDetailScreen() {
         return parts.join(" - ");
     }
 
+    // Barcode scanner handler
+    const {
+        scannerVisible,
+        permission,
+        openScanner,
+        handleBarCodeScanned,
+        closeScanner,
+        resetLock,
+    } = useBarcodeScanner({
+        onProductFound: async (product) => {
+        const newItem: Item = {
+            id: Date.now().toString(),
+            ...product,
+            completed: false,
+        };
+
+        // Check for duplicates
+        const duplicate = listItems.find(
+            (i) =>
+            i.name.trim().toLowerCase() === newItem.name.trim().toLowerCase() &&
+            i.category.trim().toLowerCase() === newItem.category.trim().toLowerCase()
+        );
+
+        if (duplicate) {
+            setTimeout(() => {
+            Alert.alert(
+                "Already in list",
+                `${newItem.name} is already in your list.`,
+                [{ text: "OK", onPress: resetLock }]
+            );
+            }, 500);
+            return;
+        }
+
+        if (!listRef) {
+            resetLock();
+            return;
+        }
+
+        await updateDoc(listRef, {
+            items: [...listItems, newItem],
+        });
+
+        setTimeout(() => {
+            Alert.alert(
+            "Added!",
+            `${newItem.name} has been added to your list.`,
+            [{ text: "OK", onPress: resetLock }]
+            );
+        }, 500);
+        },
+        onProductNotFound: (barcode) => {
+        setTimeout(() => {
+            Alert.alert(
+            "Product Not Found",
+            `Barcode: ${barcode}\nWould you like to add this item manually?`,
+            [
+                { text: "Cancel", style: "cancel", onPress: resetLock },
+                {
+                text: "Add Manually",
+                onPress: () => {
+                    resetLock();
+                    router.push(`/list/${id}/add-list-item`);
+                },
+                },
+            ]
+            );
+        }, 500);
+        },
+    });
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* Header */}
@@ -410,14 +481,15 @@ export default function ListDetailScreen() {
                             style={[styles.detailsModalContainer, { backgroundColor: colors.card }]}
                         >
                             {/* Header row */}
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
-                                <Text style={[{ fontWeight: "bold", fontSize: 26 }, { color: colors.text }]}>{editingItem?.name}</Text>
-                                {/* Replace X button with Done */}
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+                                <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
+                                    {editingItem?.name}
+                                </Text>
+
                                 <TouchableOpacity onPress={handleSaveChanges}>
                                     <Text style={[{ fontSize: 18, color: colors.primary, fontWeight: "600" }]}>Done</Text>
                                 </TouchableOpacity>
                             </View>
-
                             {/* Grid Inputs */}
                             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                 <View style={{ flex: 1, marginRight: 5 }}>
@@ -469,15 +541,18 @@ export default function ListDetailScreen() {
                 <Image source={require("../../assets/cheese.png")} style={styles.illustration} resizeMode="contain" />
                 <BodyTitle>Let's plan your shopping</BodyTitle>
                 <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
-                <TouchableOpacity style={[styles.scanBarcodesButton, { borderColor: colors.primary }]}>
-                    <Ionicons name="camera" size={20} color={colors.primary} />
-                    <Text style={[styles.scanText, { color: colors.primary }]}>Scan Barcodes</Text>
+                <TouchableOpacity 
+                    style={styles.scanBarcodesButton}
+                    onPress={openScanner}
+                >
+                    <Ionicons name="camera" size={20} color="#22c55e" />
+                    <Text style={styles.scanText}>Scan Barcodes</Text>
                 </TouchableOpacity>
             </View>
         )}
-        {/* Positioned absolutely - always visible. Use an explicit touchable placed inside an absolutely-positioned container
-            so the button sits above overlays and receives touches reliably. Add hitSlop and elevation/zIndex for good measure. */}
-        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity, backgroundColor: colors.primary }]} pointerEvents="box-none">
+      
+        {/* Add Button */}
+        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity }]} pointerEvents="box-none">
             <TouchableOpacity
                 style={styles.addButtonTouchable}
                 onPress={() => router.push(`/list/${id}/add-list-item`)}
@@ -487,6 +562,14 @@ export default function ListDetailScreen() {
                 <Text style={[styles.addButtonText, { color: colors.background }]}>+ Add</Text>
             </TouchableOpacity>
         </Animated.View>
+
+        {/* Barcode Scanner Modal */}
+       <BarcodeScannerModal
+            visible={scannerVisible}
+            onClose={closeScanner}
+            permissionGranted={!!permission?.granted}
+            onBarcodeScanned={handleBarCodeScanned}
+        />
         </View>
     );
 }
@@ -700,5 +783,5 @@ const styles = StyleSheet.create({
         color: "#888",
         marginTop: 3,
         marginLeft: 2,
-        },
+    },    
 });

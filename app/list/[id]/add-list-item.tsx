@@ -1,3 +1,5 @@
+import BarcodeScannerModal from "@/app/components/BarcodeScannerModal";
+import { useBarcodeScanner } from "@/app/hooks/useBarcodeScanner";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayUnion, collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
@@ -58,36 +60,86 @@ export default function AddListItemScreen() {
     fetchData();
   }, []);
 
-  async function addItemToCurrentList(item: Item) {
-    if (!listId) return;
-    const listRef = doc(firestore, "lists", listId);
-
-    try {
-      const docSnap = await getDoc(listRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const listItems = data.items || [];
-
-        const duplicate = listItems.find(
-          (i: Item) =>
-            i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
-            i.category.trim().toLowerCase() === item.category.trim().toLowerCase()
+  // Barcode Scanner
+  const {
+    scannerVisible,
+    permission,
+    openScanner,
+    handleBarCodeScanned,
+    closeScanner,
+    resetLock,
+  } = useBarcodeScanner({
+    onProductFound: async (product) => {
+      const newItem: Item = {
+        id: Date.now().toString(),
+        ...product,
+      };
+      await addItemToCurrentList(newItem);
+    },
+    onProductNotFound: (barcode) => {
+      setTimeout(() => {
+        Alert.alert(
+          "Not Found",
+          `Barcode: ${barcode}\nThis item is not in the database. Add manually?`,
+          [
+            { text: "Cancel", style: "cancel", onPress: resetLock },
+            { text: "Add Manually", onPress: resetLock },
+          ]
         );
-        if (duplicate) {
-          Alert.alert("Already in list", `${item.name} is already in your list.`);
-          return;
-        }
-      }
+      }, 500);
+    },
+  });
 
-      await updateDoc(listRef, {
-        items: arrayUnion(item),
-      });
-      Alert.alert("Success", `${item.name} was added to your list.`);
-    } catch (error) {
-      console.warn("Failed to add item to current list:", error);
-      Alert.alert("Error", "Failed to add item to your list. Please try again.");
-    }
-  }
+  
+    async function addItemToCurrentList(item: Item) {
+      if (!listId) return;
+      const listRef = doc(firestore, "lists", listId);
+
+      try {
+        const docSnap = await getDoc(listRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const listItems = data.items || [];
+
+          const duplicate = listItems.find(
+            (i: Item) =>
+              i.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+              i.category.trim().toLowerCase() === item.category.trim().toLowerCase()
+          );
+          if (duplicate) {
+            setTimeout(() => {
+              Alert.alert(
+                "Already in list",
+                `${item.name} is already in your list.`,
+                [{ text: "OK", onPress: resetLock }]
+              );
+            }, 500);
+            return;
+          }
+        }
+
+        await updateDoc(listRef, {
+          items: arrayUnion(item),
+        });
+
+        setTimeout(() => {
+          Alert.alert(
+            "Success",
+            `${item.name} was added to your list.`,
+            [{ text: "OK", onPress: resetLock }]
+          );
+        }, 500);
+      } catch (error) {
+        console.warn("Failed to add item to current list:", error);
+        setTimeout(() => {
+          Alert.alert(
+            "Error",
+            "Failed to add item to your list. Please try again.",
+            [{ text: "OK", onPress: resetLock }]
+          );
+        }, 500);
+      }
+    }  
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -114,8 +166,8 @@ export default function AddListItemScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.iconRight}>
-          <Ionicons name="camera" size={26} color={colors.background} />
+        <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
+          <Ionicons name="camera" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -127,6 +179,13 @@ export default function AddListItemScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={closeScanner}
+        permissionGranted={!!permission?.granted}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
     </View>
   );
 }

@@ -326,7 +326,7 @@ export default function RecipesScreen() {
       <TabBar
         activeTab="Recipes"
         onTabPress={tab => {
-          if (tab === "Lists") return;
+          if (tab === "Lists") router.push("/lists");;
           if (tab === "Pantry") router.push("/pantry");
           if (tab === "Recipes") return;
           if (tab === "Profile") router.push("/profile");

@@ -43,7 +43,6 @@ export default function PantryScreen() {
 
   const onItemPress = (item: Item) => {
     setEditingItem(item);
-    // Prefill editedValues with item data
     setEditedValues({
       quantity: item.quantity,
       unit: item.unit,
@@ -51,11 +50,9 @@ export default function PantryScreen() {
       expirationDate: item.expirationDate
     });
     setDetailsModalVisible(true);
-  }; 
+  };
 
-  // Listen to a user pantry collection or single pantry doc
   useEffect(() => {
-    // Change this to match your Firestore structure
     const pantryCol = collection(firestore, "pantry");
     const unsubscribe = onSnapshot(pantryCol, (snapshot) => {
       setPantryItems(
@@ -76,7 +73,6 @@ export default function PantryScreen() {
     return () => unsubscribe();
   }, []);
 
-  // Group pantry items by category
   const groupedPantryItems = pantryItems.reduce<{ [cat: string]: Item[] }>((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
     acc[item.category].push(item);
@@ -91,17 +87,8 @@ export default function PantryScreen() {
       Alert.alert("Error", "Failed to delete item. Please try again.");
     }
   }
-  const hasItems = pantryItems.length > 0;
 
-  function dedupeItems(items: Item[]) {
-    const seen = new Set<string>();
-    return items.filter(item => {
-      const key = (item.name.trim().toLowerCase() || "") + "||" + (item.category.trim().toLowerCase() || "");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
+  const hasItems = pantryItems.length > 0;
 
   const handleInputChange = (field: keyof Item, value: string) => {
     setEditedValues(prev => ({ ...prev, [field]: value }));
@@ -110,11 +97,9 @@ export default function PantryScreen() {
   const handleSaveChanges = async () => {
     if (!editingItem) return;
 
-    // Compose the new values over the old item
     const updatedItem: Item = {
       ...editingItem,
       ...editedValues,
-      // always keep required fields and defaults
       id: editingItem.id!,
       name: editingItem.name!,
       category: editingItem.category!,
@@ -125,7 +110,6 @@ export default function PantryScreen() {
     };
 
     try {
-      // Update the document in Firestore
       await updateDoc(doc(firestore, "pantry", editingItem.id!), {
         ...updatedItem,
       });
@@ -138,12 +122,10 @@ export default function PantryScreen() {
 
   function getItemDetailLine(item: Item) {
     const parts: string[] = [];
-    // Price with $ prefix if not already present
     if (item.price && item.price.trim() !== "") {
       const price = item.price.startsWith("$") ? item.price : `$${item.price}`;
       parts.push(price);
     }
-    // Quantity + Unit combined or individually
     if (item.quantity && item.quantity.trim() !== "" && item.unit && item.unit.trim() !== "") {
       parts.push(`${item.quantity} ${item.unit}`);
     } else if (item.quantity && item.quantity.trim() !== "") {
@@ -151,7 +133,6 @@ export default function PantryScreen() {
     } else if (item.unit && item.unit.trim() !== "") {
       parts.push(item.unit);
     }
-    // Expiration date if present
     if (item.expirationDate && item.expirationDate.trim() !== "") {
       parts.push(item.expirationDate);
     }
@@ -162,7 +143,14 @@ export default function PantryScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title="My Pantry" titleAlign="left" />
       {hasItems ? (
-        <Animated.ScrollView contentContainerStyle={styles.listContent}>
+        <Animated.ScrollView
+          contentContainerStyle={styles.listContent}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        >
           {Object.entries(groupedPantryItems).map(([category, items]) => (
             <Fragment key={category}>
               <View style={[styles.categoryHeader, { backgroundColor: colors.primary }]}>
@@ -189,14 +177,13 @@ export default function PantryScreen() {
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
-
             </Fragment>
           ))}
         </Animated.ScrollView>
       ) : (
         <View style={styles.centeredContent}>
           <Image source={require("../assets/apple.png")} style={styles.illustration} resizeMode="contain" />
-          <BodyTitle>Let’s plan your shopping</BodyTitle>
+          <BodyTitle>Let's plan your shopping</BodyTitle>
           <BodySubtitle>Tap the plus button to start adding products</BodySubtitle>
         </View>
       )}
@@ -216,13 +203,15 @@ export default function PantryScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={[styles.detailsModalContainer, { backgroundColor: colors.card }]}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems:"center", marginBottom: 15 }}>
-              <Text style={[{ fontWeight: "bold", fontSize: 26 }, { color: colors.text }]}>{editingItem?.name}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
+              <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
+                {editingItem?.name}
+              </Text>
+
               <TouchableOpacity onPress={handleSaveChanges}>
                 <Text style={[{ fontSize: 18, color: colors.primary, fontWeight: "600" }]}>Done</Text>
               </TouchableOpacity>
             </View>
-
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <View style={{ flex: 1, marginRight: 5 }}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
@@ -257,7 +246,6 @@ export default function PantryScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>Expiration Date</Text>
               <TouchableOpacity
                 onPress={() => {
-                  // Pre-fill the picker with the existing expiration date (if valid)
                   if (editedValues.expirationDate) {
                     const parts = editedValues.expirationDate.split("/");
                     if (parts.length === 3) {
@@ -277,28 +265,10 @@ export default function PantryScreen() {
                   />
                 </View>
               </TouchableOpacity>
-
               </View>
             </View>
-             {showDatePicker && (
-            <DateTimePicker
-              value={tempDate || new Date()}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) {
-                  const formatted = `${String(selectedDate.getMonth() + 1).padStart(2, "0")}/${String(
-                    selectedDate.getDate()
-                  ).padStart(2, "0")}/${selectedDate.getFullYear()}`;
-                  handleInputChange("expirationDate", formatted);
-                  setTempDate(selectedDate);
-                }
-              }}
-            />
-          )}
           </KeyboardAvoidingView>
-         
+
           {/* Date Picker Modal */}
           <Modal
             visible={showDatePickerModal}
@@ -341,16 +311,23 @@ export default function PantryScreen() {
               </View>
             </View>
           </Modal>
-
         </View>
       </Modal>
 
-      {/* Add Button */}
-      <TouchableOpacity onPress={() => router.push("/pantry/add-item")}>
-        <Animated.View style={[styles.addButton, { opacity: addButtonOpacity, backgroundColor: colors.primary }]}>
-          <Text style={[styles.addButtonText, { color: colors.background }]}>+ Add</Text>
-        </Animated.View>
-      </TouchableOpacity>
+      {/* Add Button with Animated Opacity - UPDATED */}
+      <Animated.View 
+        style={[styles.addButton, { opacity: addButtonOpacity }]} 
+        pointerEvents="box-none"
+      >
+        <TouchableOpacity 
+          onPress={() => router.push("/pantry/add-item")}
+          style={styles.addButtonTouchable}
+          activeOpacity={0.85}
+          hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
+        >
+          <Text style={styles.addButtonText}>+ Add</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
       <TabBar
         activeTab="Pantry"
@@ -403,7 +380,8 @@ const styles = StyleSheet.create({
   addButton: {
     position: "absolute",
     bottom: 180,
-    alignSelf: "flex-end",
+    right: 50,
+    alignSelf: "center",
     backgroundColor: "#36AF27",
     borderRadius: 999,
     paddingVertical: 16,
@@ -411,77 +389,84 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 50,
+    zIndex: 100,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+  },
+  addButtonTouchable: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButtonText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 22,
   },
-
-  // Detail Item Modal
-    detailsModalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(32,32,32,0.4)",
-        justifyContent: "flex-end",
-    },
-    background: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: "transparent"
-    },
-    detailsModalContainer: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 22,
-        paddingBottom: 28, 
-    },
-    label: {
-        fontSize: 16,
-        color: "#888",
-        marginBottom: 10,
-    },   
-    inputBoxText: {
-        fontSize: 18,
-        color: "#222",
-        borderRadius: 11,
-        paddingVertical: 13,
-        paddingHorizontal: 15,
-        backgroundColor: "#f8f8f8",
-        marginBottom: 40,
-    },
-    saveButton: {
-        backgroundColor: "#36AF27",
-        borderRadius: 28,
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 16,
-        marginTop: 5,
-        marginBottom: 20,
-    },
-    itemDetailText: {
-        fontSize: 15,
-        color: "#888",
-        marginTop: 3,
-        marginLeft: 2,
-    },
-    datePickerOverlay: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: "rgba(0,0,0,0.01)",
-    },
-    datePickerContainer: {
-      backgroundColor: "#fff",
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      paddingVertical: 20,
-      paddingHorizontal: 18,
-    },
-    datePickerHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 10,
-    },
+  detailsModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(32,32,32,0.4)",
+    justifyContent: "flex-end",
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent"
+  },
+  detailsModalContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 22,
+    paddingBottom: 28,
+  },
+  label: {
+    fontSize: 16,
+    color: "#888",
+    marginBottom: 10,
+  },
+  inputBoxText: {
+    fontSize: 18,
+    color: "#222",
+    borderRadius: 11,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    backgroundColor: "#f8f8f8",
+    marginBottom: 40,
+  },
+  saveButton: {
+    backgroundColor: "#36AF27",
+    borderRadius: 28,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    marginTop: 5,
+    marginBottom: 20,
+  },
+  itemDetailText: {
+    fontSize: 15,
+    color: "#888",
+    marginTop: 3,
+    marginLeft: 2,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.01)",
+  },
+  datePickerContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+  },
+  datePickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 });

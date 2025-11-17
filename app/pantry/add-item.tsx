@@ -5,6 +5,8 @@ import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { firestore } from "../../firebaseConfig";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner";
 import { getThemeColors } from "../../theme/colors";
 
 type Item = {
@@ -26,55 +28,100 @@ export default function AddPantryItemScreen() {
   const filtered = !item
     ? []
     : allItems.filter((i) => i.name.toLowerCase().includes(item.toLowerCase()));
-  const [pantryItems, setPantryItems] = useState<Item[]>([]);
   
-// Listen to pantry collection
-useEffect(() => {
-  async function fetchData() {
-    const snapshot = await getDocs(collection(firestore, "items"));
-    setAllItems(
-      snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            name: doc.data().name,
-            category: doc.data().category,
-            quantity: doc.data().quantity || "",
-            unit: doc.data().unit || "",
-            price: doc.data().price || "",
-            expirationDate: doc.data().expirationDate || "",
-          }) as Item
-      )
-    );
-  }
-  fetchData();
-}, []);
+  // Listen to pantry collection
+  useEffect(() => {
+    async function fetchData() {
+      const snapshot = await getDocs(collection(firestore, "items"));
+      setAllItems(
+        snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              name: doc.data().name,
+              category: doc.data().category,
+              quantity: doc.data().quantity || "",
+              unit: doc.data().unit || "",
+              price: doc.data().price || "",
+              expirationDate: doc.data().expirationDate || "",
+            }) as Item
+        )
+      );
+    }
+    fetchData();
+  }, []);
 
   async function addItemToPantry(item: Item) {
-  // Query pantry by name and category
-  const pantryCol = collection(firestore, "pantry");
-  const q = query(
-    pantryCol,
-    where("name", "==", item.name),
-    where("category", "==", item.category)
-  );
-  const querySnapshot = await getDocs(q);
+    const pantryCol = collection(firestore, "pantry");
+    const q = query(
+      pantryCol,
+      where("name", "==", item.name),
+      where("category", "==", item.category)
+    );
+    const querySnapshot = await getDocs(q);
 
-  if (!querySnapshot.empty) {
-    Alert.alert("Already in pantry", `${item.name} is already in your pantry.`);
-    return;
+    if (!querySnapshot.empty) {
+      setTimeout(() => {
+        Alert.alert(
+          "Already in pantry",
+          `${item.name} is already in your pantry.`,
+          [{ text: "OK", onPress: resetLock }]
+        );
+      }, 500);
+      return;
+    }
+
+    try {
+      const { id, ...pantryItem } = item;
+      await addDoc(pantryCol, pantryItem);
+      setTimeout(() => {
+        Alert.alert(
+          "Success",
+          `${item.name} was added to your pantry.`,
+          [{ text: "OK", onPress: resetLock }]
+        );
+      }, 500);
+    } catch (error) {
+      console.warn("Failed to add item to pantry:", error);
+      setTimeout(() => {
+        Alert.alert(
+          "Error",
+          "Failed to add item to your pantry. Please try again.",
+          [{ text: "OK", onPress: resetLock }]
+        );
+      }, 500);
+    }
   }
 
-  try {
-    const { id, ...pantryItem } = item;
-    await addDoc(pantryCol, pantryItem);
-    Alert.alert("Success", `${item.name} was added to your pantry.`);
-  } catch (error) {
-    console.warn("Failed to add item to pantry:", error);
-    Alert.alert("Error", "Failed to add item to your pantry. Please try again.");
-  }
-}
-
+  // Barcode Scanner
+  const {
+    scannerVisible,
+    permission,
+    openScanner,
+    handleBarCodeScanned,
+    closeScanner,
+    resetLock,
+  } = useBarcodeScanner({
+    onProductFound: async (product) => {
+      const newItem: Item = {
+        id: Date.now().toString(),
+        ...product,
+      };
+      await addItemToPantry(newItem);
+    },
+    onProductNotFound: (barcode) => {
+      setTimeout(() => {
+        Alert.alert(
+          "Not Found",
+          `Barcode: ${barcode}\nThis item is not in the database. Add manually?`,
+          [
+            { text: "Cancel", style: "cancel", onPress: resetLock },
+            { text: "Add Manually", onPress: resetLock },
+          ]
+        );
+      }, 500);
+    },
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -104,7 +151,7 @@ useEffect(() => {
         </View>
 
         {/* Camera Icon */}
-        <TouchableOpacity style={styles.iconRight}>
+        <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
           <Ionicons name="camera" size={26} color={colors.background} />
         </TouchableOpacity>
       </View>
@@ -117,10 +164,17 @@ useEffect(() => {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={closeScanner}
+        permissionGranted={!!permission?.granted}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -178,4 +232,3 @@ const styles = StyleSheet.create({
     color: "#444",
   },
 });
-
