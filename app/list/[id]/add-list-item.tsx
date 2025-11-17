@@ -1,5 +1,5 @@
 import BarcodeScannerModal from "@/app/components/BarcodeScannerModal";
-import { useBarcodeScanner } from "@/app/hooks/useBarcodeScanner";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { arrayUnion, collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore";
@@ -167,7 +167,7 @@ export default function AddListItemScreen() {
         </View>
 
         <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
-          <Ionicons name="camera" size={26} color="#fff" />
+          <Ionicons name="camera" size={26} color={colors.background} />
         </TouchableOpacity>
       </View>
 
