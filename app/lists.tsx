@@ -163,8 +163,8 @@ export default function ListsScreen() {
                   style={[styles.listCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
                 <View>
-                  <Text style={styles.listName}>{item.name}</Text>
-                  <Text style={styles.listItemCount}>
+                  <Text style={[styles.listName, { color: colors.text }]}>{item.name}</Text>
+                  <Text style={[styles.listItemCount, { color: colors.textSecondary }]}>
                     {item.itemsCount} {item.itemsCount === 1 ? "item" : "items"}
                   </Text>
                 </View>

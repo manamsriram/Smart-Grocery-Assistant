@@ -204,7 +204,7 @@ export default function PantryScreen() {
             style={[styles.detailsModalContainer, { backgroundColor: colors.card }]}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 }}>
-              <Text style={{ fontWeight: "bold", fontSize: 26, flex: 1, marginRight: 10 }}>
+              <Text style={[{ fontWeight: "bold", fontSize: 26 }, { color: colors.text }]}>
                 {editingItem?.name}
               </Text>
 
@@ -315,17 +315,14 @@ export default function PantryScreen() {
       </Modal>
 
       {/* Add Button with Animated Opacity - UPDATED */}
-      <Animated.View 
-        style={[styles.addButton, { opacity: addButtonOpacity }]} 
-        pointerEvents="box-none"
-      >
+      <Animated.View style={[styles.addButton, { opacity: addButtonOpacity, backgroundColor: colors.primary }]}>
         <TouchableOpacity 
           onPress={() => router.push("/pantry/add-item")}
           style={styles.addButtonTouchable}
           activeOpacity={0.85}
           hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
         >
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <Text style={[styles.addButtonText, { color: colors.background }]}>+ Add</Text>
         </TouchableOpacity>
       </Animated.View>
 

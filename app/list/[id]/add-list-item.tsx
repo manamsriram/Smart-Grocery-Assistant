@@ -167,7 +167,7 @@ export default function AddListItemScreen() {
         </View>
 
         <TouchableOpacity style={styles.iconRight} onPress={openScanner}>
-          <Ionicons name="camera" size={26} color="#fff" />
+          <Ionicons name="camera" size={26} color={colors.background} />
         </TouchableOpacity>
       </View>
 
