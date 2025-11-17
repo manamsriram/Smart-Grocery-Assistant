@@ -6,7 +6,11 @@ A comprehensive mobile application built with React Native and Expo that helps u
 
 ## Features
 
-### Current Features
+### 🎨 Theme System (NEW)
+- **Dark/Light/System Modes**: Choose between light theme, dark theme, or automatic OS detection
+- **Persistent Preferences**: Theme selection is saved and restored on app restart
+- **Real-time Switching**: Seamlessly switch between themes without restarting
+- **Comprehensive Coverage**: All screens and components respect the current theme
 
 ### 📝 Shopping Lists
 - Create and manage multiple grocery lists
@@ -42,8 +46,10 @@ A comprehensive mobile application built with React Native and Expo that helps u
 - **Language**: TypeScript
 - **Backend**: Firebase (Firestore, Authentication)
 - **Navigation**: Expo Router (file-based routing)
-- **State Management**: React Context API
-- **UI Components**: React Native Elements
+- **State Management**: React Context API (Theme Management)
+- **Persistence**: AsyncStorage (for theme preferences)
+- **UI Components**: React Native (native components + custom components)
+- **Appearance Detection**: React Native Appearance API
 
 ## Getting Started
 
@@ -87,10 +93,12 @@ npx expo start
 Smart-Grocery-Assistant/
 ├── app/
 │   ├── (auth)/
+│   │   ├── _layout.tsx                  → Auth group navigation
 │   │   ├── login.tsx                    → User authentication login form
 │   │   └── signup.tsx                   → User account registration form
 │   ├── components/
 │   │   ├── AuthHeader.tsx               → Header shown auth screens
+│   │   ├── BarcodeScannerModal.tsx      → Barcode scanner component
 │   │   ├── BodySubtitle.tsx             → Secondary text body component
 │   │   ├── BodyTitle.tsx                → Primary title text component
 │   │   ├── Header.tsx                   → Main app header navigation bar
@@ -107,15 +115,17 @@ Smart-Grocery-Assistant/
 │   │   └── [id].tsx                     → Individual recipe detail screen
 │   ├── _layout.tsx                      → Root navigation stack layout
 │   ├── account.tsx                      → User account settings screen
-│   ├── index.tsx                        → Welcome splash screen
+│   ├── index.tsx                        → Welcome landing page
 │   ├── lists.tsx                        → All shopping lists view
 │   ├── pantry.tsx                       → Pantry inventory management screen
 │   ├── profile.tsx                      → User profile information screen
 │   └── recipes.tsx                      → Recipe discovery and listing
 ├── context/
-│   └── ThemeContext.tsx                 → Light dark system theme provider
+│   └── ThemeContext.tsx                 → Global theme management (light/dark/system)
 ├── theme/
 │   └── colors.ts                        → Color palette theme definitions
+├── hooks/
+│   └── useBarcodeScanner.ts             → Custom hook for barcode scanning
 ├── admin-scripts/
 │   └── importItems.js                   → Script import data initialization
 ├── assets/
